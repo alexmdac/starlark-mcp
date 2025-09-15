@@ -46,12 +46,47 @@ func ExecuteStarlark(
 
 const ExecuteStarlarkDescription = `Executes Starlark programs.
 
+Starlark is a Python-like language with important restrictions and syntax differences.
+
+KEY SYNTAX DIFFERENCES FROM PYTHON:
+- All top-level code must be in functions (no bare loops/conditionals)
+- Operator chaining requires parentheses: use (a <= b) and (b < c) not a <= b < c  
+- No f-strings or % formatting - use string concatenation with str()
+- No tuple unpacking in assignments beyond simple cases
+- More restrictive about operator precedence
+
+STARLARK RESTRICTIONS:
+- No file I/O, network access, or system calls
+- No imports except built-in functions
+- No while loops (use for loops with range)
+- No classes or complex OOP features
+- Deterministic execution only
+
+EXAMPLE PROGRAM STRUCTURE:
+
+def my_function():
+  result = []
+  for i in range(10):
+    result.append(str(i))
+  return result
+
+def main():
+  data = my_function()
+  for item in data:
+    print(item)
+
+main()  # Must call explicitly
+
+COMMON PATTERNS:
+- String building: use concatenation like s = s + "text"
+- Avoid complex expressions: break into multiple lines
+- Use explicit str() conversion for print statements
+- Put all execution logic in functions
+
+REFERENCE:
 See https://raw.githubusercontent.com/google/starlark-go/bf296ed553ea1715656054a7f64ac6a6dd161360/doc/spec.md
 for the Starlark language specification.
-
-Programs can emit output using the Starlark "print" statement. The "print" statement
-outputs the given string with a newline added. The MCP server returns the aggregated
-output.`
+`
 
 var ExecuteStarlarkTool = &mcp.Tool{
 	Name:        "ExecuteStarlark",
