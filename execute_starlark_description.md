@@ -16,6 +16,7 @@ Starlark is a Python-like language with important restrictions and syntax differ
 * No file I/O, network access, or system calls
 * No imports except built-in functions
 * No while loops (use for loops with range)
+* No recursion allowed
 * No classes or complex OOP features
 * Deterministic execution only
 
@@ -36,9 +37,19 @@ def main():
 main()  # Must call explicitly
 ```
 
+## Syntax Gotchas
+
+* No `**` operator - use repeated multiplication: `x * x` instead of `x**2`
+* No built-in functions: `sum()`, `min()`, `max()` - implement manually
+* No string methods: `.rjust()`, `.strip()`, `.upper()` - implement manually
+* Limited list comprehensions - avoid complex expressions like `[f(x) for x in list]`
+* No `enumerate()` - use `range(len(list))` and index manually
+
 ## Common Patterns
 
 * String building: use concatenation like s = s + "text"
+* Manual sum: `total = 0; for x in numbers: total = total + x`
+* String padding: implement `right_justify(text, width)` function
 * Avoid complex expressions: break into multiple lines
 * Use explicit str() conversion for print statements
 * Put all execution logic in functions
