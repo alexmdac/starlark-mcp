@@ -89,11 +89,11 @@ for the Starlark language specification.
 `
 
 var ExecuteStarlarkTool = &mcp.Tool{
-	Name:        "ExecuteStarlark",
+	Name:        "execute-starlark",
 	Description: ExecuteStarlarkDescription,
 }
 
-const ServerName = "StarlarkMCP"
+const ServerName = "starlark-mcp"
 
 func RunMCPServer(ctx context.Context) error {
 	server := mcp.NewServer(&mcp.Implementation{Name: ServerName}, nil)
