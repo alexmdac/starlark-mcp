@@ -54,6 +54,10 @@ main()  # Must call explicitly
 * Use explicit str() conversion for print statements
 * Put all execution logic in functions
 
+## Built-in Functions
+
+For documentation on available built-in functions (like `sqrt()` and `pow()` via `load("math", "sqrt", "pow")`), see the `starlark://builtins` resource.
+
 ## References
 
 [Starlark Language Specification](https://raw.githubusercontent.com/google/starlark-go/bf296ed553ea1715656054a7f64ac6a6dd161360/doc/spec.md)

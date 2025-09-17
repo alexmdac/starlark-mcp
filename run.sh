@@ -2,4 +2,4 @@
 
 cd -- "$( dirname -- "${BASH_SOURCE[0]}" )"
 
-exec go run main.go
+exec go run .
