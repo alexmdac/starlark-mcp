@@ -44,7 +44,7 @@ func executeStarlark(
 		thread,
 		"LLM supplied program",
 		args.Program,
-		nil)
+		predeclared())
 	if err != nil {
 		return nil, nil, fmt.Errorf("failed to execute program: %v", err)
 	}
