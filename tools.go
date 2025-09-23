@@ -5,6 +5,7 @@ import (
 	"context"
 	_ "embed"
 	"fmt"
+	"time"
 
 	"github.com/modelcontextprotocol/go-sdk/mcp"
 	"go.starlark.net/starlark"
@@ -23,7 +24,19 @@ func addExecuteStarlarkTool(server *mcp.Server) {
 }
 
 type executeStarlarkParams struct {
-	Program string `json:"program" jsonschema:"a valid Starlark program"`
+	Program     string  `json:"program" jsonschema:"a valid Starlark program"`
+	TimeoutSecs float32 `json:"timeout_secs" jsonschema:"execution timeout in seconds"`
+}
+
+func (p executeStarlarkParams) validate() error {
+	if p.TimeoutSecs <= 0.0 {
+		return fmt.Errorf("invalid timeout: %f", p.TimeoutSecs)
+	}
+	return nil
+}
+
+func (p executeStarlarkParams) timeout() time.Duration {
+	return time.Duration(p.TimeoutSecs * float32(time.Second))
 }
 
 func executeStarlark(
@@ -31,6 +44,13 @@ func executeStarlark(
 	req *mcp.CallToolRequest,
 	args executeStarlarkParams,
 ) (*mcp.CallToolResult, any, error) {
+	if err := args.validate(); err != nil {
+		return nil, nil, err
+	}
+
+	ctx, done := context.WithTimeout(ctx, args.timeout())
+	defer done()
+
 	var buf bytes.Buffer
 	thread := &starlark.Thread{
 		Print: func(thread *starlark.Thread, msg string) {
@@ -39,6 +59,14 @@ func executeStarlark(
 		},
 		Load: loadBuiltinModule,
 	}
+	context.AfterFunc(ctx, func() {
+		reason := ""
+		if err := ctx.Err(); err != nil {
+			reason = err.Error()
+		}
+		thread.Cancel(reason)
+	})
+
 	_, err := starlark.ExecFileOptions(
 		syntax.LegacyFileOptions(),
 		thread,
