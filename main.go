@@ -2,22 +2,21 @@ package main
 
 import (
 	"context"
-	_ "embed"
 	"log"
 
 	"github.com/modelcontextprotocol/go-sdk/mcp"
 )
 
-func runMCPServer(ctx context.Context) error {
+func newMCPServer() *mcp.Server {
 	server := mcp.NewServer(&mcp.Implementation{Name: "starlark-mcp"}, nil)
 	addEmbeddedResources(server)
 	addExecuteStarlarkTool(server)
-	return server.Run(ctx, &mcp.StdioTransport{})
+	return server
 }
 
 func main() {
-	ctx := context.Background()
-	if err := runMCPServer(ctx); err != nil {
+	server := newMCPServer()
+	if err := server.Run(context.Background(), &mcp.StdioTransport{}); err != nil {
 		log.Fatal(err)
 	}
 }

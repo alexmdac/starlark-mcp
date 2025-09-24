@@ -39,7 +39,7 @@ Calculate the square root of a number.
 
 - **Parameters:** `x` (float) - The number to take the square root of
 - **Returns:** `float` - The square root of x
-- **Raises:** Error if x is negative
+- **Raises:** Error if the result is not a valid number (NaN)
 
 **Examples:**
 ```python
@@ -49,7 +49,7 @@ sqrt(16.0)   # -> 4.0
 sqrt(25.0)   # -> 5.0
 sqrt(2.0)    # -> 1.4142135623730951
 sqrt(0.0)    # -> 0.0
-sqrt(-1.0)   # Error: sqrt: x is negative
+sqrt(-1.0)   # Error: sqrt: not a number
 ```
 
 ### pow(x, y)
@@ -91,7 +91,7 @@ sqrt(float(16))  # -> 4.0 (if float() conversion is available)
 
 Functions provide clear error messages for invalid inputs:
 
-- **Negative square roots:** `sqrt: x is negative: -1.000000`
+- **Invalid sqrt results:** `sqrt: not a number`
 - **Invalid pow results:** `pow: not a number` (for operations like (-1)^0.5)
 - **Type errors:** `sqrt: for parameter x: got int, want float`
 

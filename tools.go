@@ -12,15 +12,17 @@ import (
 	"go.starlark.net/syntax"
 )
 
+const executeStarlarkName = "execute-starlark"
+
 //go:embed execute_starlark_description.md
 var executeStarlarkDescription string
 
 func addExecuteStarlarkTool(server *mcp.Server) {
-	executeStarlarkTool := &mcp.Tool{
-		Name:        "execute-starlark",
+	tool := &mcp.Tool{
+		Name:        executeStarlarkName,
 		Description: executeStarlarkDescription,
 	}
-	mcp.AddTool(server, executeStarlarkTool, executeStarlark)
+	mcp.AddTool(server, tool, handleExecuteStarlarkTool)
 }
 
 type executeStarlarkParams struct {
@@ -39,7 +41,7 @@ func (p executeStarlarkParams) timeout() time.Duration {
 	return time.Duration(p.TimeoutSecs * float32(time.Second))
 }
 
-func executeStarlark(
+func handleExecuteStarlarkTool(
 	ctx context.Context,
 	req *mcp.CallToolRequest,
 	args executeStarlarkParams,
@@ -51,6 +53,20 @@ func executeStarlark(
 	ctx, done := context.WithTimeout(ctx, args.timeout())
 	defer done()
 
+	output, err := executeStarlark(ctx, args.Program)
+	if err != nil {
+		return nil, nil, err
+	}
+	return &mcp.CallToolResult{
+		Content: []mcp.Content{
+			&mcp.TextContent{Text: output},
+		},
+	}, nil, nil
+}
+
+// executeStarlark executes the given Starlark program and returns its output.
+// The program generates output using the "print" builtin function.
+func executeStarlark(ctx context.Context, program string) (string, error) {
 	var buf bytes.Buffer
 	thread := &starlark.Thread{
 		Print: func(thread *starlark.Thread, msg string) {
@@ -71,14 +87,10 @@ func executeStarlark(
 		syntax.LegacyFileOptions(),
 		thread,
 		"LLM supplied program",
-		args.Program,
+		program,
 		predeclared())
 	if err != nil {
-		return nil, nil, fmt.Errorf("failed to execute program: %v", err)
+		return "", fmt.Errorf("failed to execute program: %v", err)
 	}
-	return &mcp.CallToolResult{
-		Content: []mcp.Content{
-			&mcp.TextContent{Text: buf.String()},
-		},
-	}, nil, nil
+	return buf.String(), nil
 }

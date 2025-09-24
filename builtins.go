@@ -62,9 +62,6 @@ func sqrt(
 	if err != nil {
 		return nil, err
 	}
-	if x < 0 {
-		return nil, fmt.Errorf("sqrt: x is negative: %f", x)
-	}
 	res := math.Sqrt(x)
 	if err := checkFloat(res); err != nil {
 		return nil, fmt.Errorf("sqrt: %v", err)
