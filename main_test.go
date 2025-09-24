@@ -128,6 +128,35 @@ func TestExecuteStarlark_InvalidTimeout(t *testing.T) {
 	}
 }
 
+func TestExecuteStarlark_OutputBufferOverflow(t *testing.T) {
+	client := startTestServer(t)
+
+	// This will exceed the limit, since an extra newline rune is
+	// added for each message.
+	program := `
+def main():
+    large_str = "X" * 1024
+    for i in range(16):
+	  print(large_str)
+
+main()
+`
+	params := &mcp.CallToolParams{
+		Name: executeStarlarkName,
+		Arguments: executeStarlarkParams{
+			Program:     program,
+			TimeoutSecs: 60.0,
+		},
+	}
+
+	errorText := expectCallToolError(t, client, params)
+	wantErrorText := "output length 16400 bytes exceeded 16384 bytes"
+	if !strings.Contains(errorText, wantErrorText) {
+		t.Fatalf("expected error to contain %q, but got %q", wantErrorText,
+			errorText)
+	}
+}
+
 func TestBuiltinsResource(t *testing.T) {
 	testCases := []struct {
 		name          string

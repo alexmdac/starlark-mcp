@@ -1,10 +1,10 @@
 package main
 
 import (
-	"bytes"
 	"context"
 	_ "embed"
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/modelcontextprotocol/go-sdk/mcp"
@@ -12,7 +12,10 @@ import (
 	"go.starlark.net/syntax"
 )
 
-const executeStarlarkName = "execute-starlark"
+const (
+	maxOutputLen        = 16 * 1024
+	executeStarlarkName = "execute-starlark"
+)
 
 //go:embed execute_starlark_description.md
 var executeStarlarkDescription string
@@ -67,13 +70,10 @@ func handleExecuteStarlarkTool(
 // executeStarlark executes the given Starlark program and returns its output.
 // The program generates output using the "print" builtin function.
 func executeStarlark(ctx context.Context, program string) (string, error) {
-	var buf bytes.Buffer
+	buf := newOutputBuffer(maxOutputLen)
 	thread := &starlark.Thread{
-		Print: func(thread *starlark.Thread, msg string) {
-			buf.WriteString(msg) // This panics on OOM, never returns a non-nil error.
-			buf.WriteRune('\n')
-		},
-		Load: loadBuiltinModule,
+		Print: buf.appendln,
+		Load:  loadBuiltinModule,
 	}
 	context.AfterFunc(ctx, func() {
 		reason := ""
@@ -82,7 +82,6 @@ func executeStarlark(ctx context.Context, program string) (string, error) {
 		}
 		thread.Cancel(reason)
 	})
-
 	_, err := starlark.ExecFileOptions(
 		syntax.LegacyFileOptions(),
 		thread,
@@ -92,5 +91,29 @@ func executeStarlark(ctx context.Context, program string) (string, error) {
 	if err != nil {
 		return "", fmt.Errorf("failed to execute program: %v", err)
 	}
-	return buf.String(), nil
+	return buf.str(), nil
+}
+
+type outputBuffer struct {
+	maxLen int
+	buf    strings.Builder
+}
+
+func newOutputBuffer(maxLen int) *outputBuffer {
+	return &outputBuffer{maxLen: maxLen}
+}
+
+func (b *outputBuffer) appendln(thread *starlark.Thread, msg string) {
+	newBufLen := b.buf.Len() + len(msg) + 1
+	if newBufLen > b.maxLen {
+		thread.Cancel(fmt.Sprintf("output length %d bytes exceeded %d bytes",
+			newBufLen, b.maxLen))
+		return
+	}
+	b.buf.WriteString(msg) // Never returns an error.
+	b.buf.WriteRune('\n')
+}
+
+func (b *outputBuffer) str() string {
+	return b.buf.String()
 }
