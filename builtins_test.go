@@ -66,7 +66,7 @@ func TestBuiltins(t *testing.T) {
 		{
 			name:        "sorted_mixed_types",
 			code:        `print(sorted([1, "hello"]))`,
-			expectedErr: "sorted: string < int not implemented",
+			expectedErr: "string < int not implemented",
 		},
 		{
 			name:        "pow_non_float",
