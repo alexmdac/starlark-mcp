@@ -3,10 +3,8 @@ package main
 import (
 	"fmt"
 	"math"
-	"slices"
 
 	"go.starlark.net/starlark"
-	"go.starlark.net/syntax"
 )
 
 // Built-in function inclusion criteria:
@@ -85,57 +83,7 @@ func loadBuiltinModule(thread *starlark.Thread, module string) (starlark.StringD
 	}
 }
 
-func sorted(
-	thread *starlark.Thread,
-	fn *starlark.Builtin,
-	args starlark.Tuple,
-	kwargs []starlark.Tuple,
-) (starlark.Value, error) {
-	var iterable starlark.Iterable
-	err := starlark.UnpackArgs(fn.Name(), args, kwargs, "iterable", &iterable)
-	if err != nil {
-		return nil, err
-	}
-
-	var elems []starlark.Value
-	for elem := range starlark.Elements(iterable) {
-		elems = append(elems, elem)
-	}
-
-	var sortErr error
-	slices.SortFunc(elems, func(x, y starlark.Value) int {
-		eql, err := starlark.Compare(syntax.EQL, x, y)
-		if err != nil {
-			if sortErr == nil {
-				sortErr = err
-			}
-			return 0
-		}
-		if eql {
-			return 0
-		}
-		lt, err := starlark.Compare(syntax.LT, x, y)
-		if err != nil {
-			if sortErr == nil {
-				sortErr = err
-			}
-			return 0
-		}
-		if lt {
-			return -1
-		}
-		return 1
-	})
-	if sortErr != nil {
-		return nil, fmt.Errorf("sorted: %v", sortErr)
-	}
-
-	return starlark.NewList(elems), nil
-}
-
 // predeclared returns global symbols that do not need to be loaded.
 func predeclared() starlark.StringDict {
-	return starlark.StringDict{
-		"sorted": starlark.NewBuiltin("sorted", sorted),
-	}
+	return starlark.StringDict{}
 }
