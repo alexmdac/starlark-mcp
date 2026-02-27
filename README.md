@@ -49,10 +49,10 @@ Development tools (Task, Lefthook, staticcheck) are managed as
 [Go tool dependencies](https://go.dev/doc/modules/managing-dependencies#tools)
 in `go.mod` — no extra installs needed beyond Go itself.
 
-Set up the pre-push hook (one-time):
+Set up local development (one-time):
 
 ```sh
-go tool lefthook install
+go tool task setup
 ```
 
 Run checks locally:

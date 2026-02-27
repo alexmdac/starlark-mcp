@@ -1,6 +1,11 @@
 version: "3"
 
 tasks:
+  setup:
+    desc: Set up local development environment
+    cmds:
+      - go tool lefthook install
+
   fmt:
     desc: Check code formatting
     cmds:
