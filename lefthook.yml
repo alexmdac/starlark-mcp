@@ -1,4 +1,4 @@
 pre-push:
   commands:
     check:
-      run: go tool task check
+      run: task check

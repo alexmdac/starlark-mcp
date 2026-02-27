@@ -45,20 +45,23 @@ A good first prompt to try is: *"generate a fractal using the Starlark MCP serve
 
 ## Development
 
-Development tools (Task, Lefthook, staticcheck) are managed as
-[Go tool dependencies](https://go.dev/doc/modules/managing-dependencies#tools)
-in `go.mod` — no extra installs needed beyond Go itself.
-
-Set up local development (one-time):
+This project uses [mise](https://mise.jdx.dev/) to manage development tools.
+After [installing mise](https://mise.jdx.dev/getting-started.html), set up
+local development (one-time):
 
 ```sh
-go tool task setup
+mise install
+task setup
 ```
+
+This installs [Task](https://taskfile.dev) and
+[Lefthook](https://github.com/evilmartians/lefthook), and configures the
+pre-push git hook.
 
 Run checks locally:
 
 ```sh
-go tool task check
+task check
 ```
 
 This runs the same checks that run automatically on `git push` via the Lefthook
@@ -67,7 +70,7 @@ pre-push hook.
 See all available tasks:
 
 ```sh
-go tool task --list
+task --list
 ```
 
 ## License
