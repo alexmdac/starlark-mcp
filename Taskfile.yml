@@ -1,0 +1,57 @@
+version: "3"
+
+tasks:
+  setup:
+    desc: Set up local development environment
+    cmds:
+      - go tool lefthook install
+
+  fmt:
+    desc: Check code formatting
+    cmds:
+      - |
+        unformatted=$(gofmt -s -l .)
+        if [ -n "$unformatted" ]; then
+          echo "The following files are not formatted:"
+          echo "$unformatted"
+          exit 1
+        fi
+
+  vet:
+    desc: Run go vet
+    cmds:
+      - go vet ./...
+
+  staticcheck:
+    desc: Run staticcheck
+    cmds:
+      - go tool staticcheck ./...
+
+  test:
+    desc: Run tests
+    cmds:
+      - go test ./...
+
+  test-msan:
+    desc: Run tests with memory sanitizer (requires clang)
+    env:
+      CC: clang
+      CGO_ENABLED: "1"
+    cmds:
+      - go test -msan ./...
+
+  test-asan:
+    desc: Run tests with address sanitizer (requires clang)
+    env:
+      CC: clang
+      CGO_ENABLED: "1"
+    cmds:
+      - go test -asan ./...
+
+  check:
+    desc: Run all pre-push checks
+    deps: [fmt, vet, staticcheck, test]
+
+  ci:
+    desc: Run all CI checks
+    deps: [check, test-msan, test-asan]

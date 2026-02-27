@@ -43,6 +43,33 @@ provided by this server.
 
 A good first prompt to try is: *"generate a fractal using the Starlark MCP server"*.
 
+## Development
+
+Development tools (Task, Lefthook, staticcheck) are managed as
+[Go tool dependencies](https://go.dev/doc/modules/managing-dependencies#tools)
+in `go.mod` — no extra installs needed beyond Go itself.
+
+Set up local development (one-time):
+
+```sh
+go tool task setup
+```
+
+Run checks locally:
+
+```sh
+go tool task check
+```
+
+This runs the same checks that run automatically on `git push` via the Lefthook
+pre-push hook.
+
+See all available tasks:
+
+```sh
+go tool task --list
+```
+
 ## License
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
