@@ -20,7 +20,7 @@ tasks:
   staticcheck:
     desc: Run staticcheck
     cmds:
-      - go run honnef.co/go/tools/cmd/staticcheck@latest ./...
+      - go tool staticcheck ./...
 
   test:
     desc: Run tests
