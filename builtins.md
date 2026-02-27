@@ -4,70 +4,81 @@ This document describes the built-in functions available in the Starlark MCP ser
 
 ## Math Module
 
-Mathematical functions for common operations. Import with:
+Mathematical functions and constants. Import with:
 
 ```python
-load("math", "sqrt", "pow")
+load("math", "sqrt", "pow", "sin", "pi")
 ```
 
-### sqrt(x)
+All math functions accept both `int` and `float` arguments.
 
-Calculate the square root of a number.
+### Constants
 
-- **Parameters:** `x` (float) - The number to take the square root of
-- **Returns:** `float` - The square root of x
-- **Raises:** Error if the result is not a valid number (NaN)
+| Name | Description |
+|------|-------------|
+| `pi` | The ratio of a circle's circumference to its diameter, approximately 3.14159. |
+| `e`  | The base of natural logarithms, approximately 2.71828. |
 
-**Examples:**
+### Rounding and Absolute Value
+
+| Function | Description |
+|----------|-------------|
+| `ceil(x)` | Returns the smallest integer greater than or equal to x. |
+| `floor(x)` | Returns the largest integer less than or equal to x. |
+| `round(x)` | Returns the nearest integer, rounding half away from zero. |
+| `fabs(x)` | Returns the absolute value of x as a float. |
+
+### Arithmetic
+
+| Function | Description |
+|----------|-------------|
+| `pow(x, y)` | Returns x raised to the power y. |
+| `sqrt(x)` | Returns the square root of x. |
+| `exp(x)` | Returns e raised to the power x. |
+| `log(x[, base])` | Returns the logarithm of x in the given base (natural log by default). |
+| `mod(x, y)` | Returns the floating-point remainder of x/y. |
+| `remainder(x, y)` | Returns the IEEE 754 floating-point remainder of x/y. |
+| `copysign(x, y)` | Returns a value with the magnitude of x and the sign of y. |
+| `gamma(x)` | Returns the Gamma function of x. |
+
+### Trigonometry
+
+| Function | Description |
+|----------|-------------|
+| `sin(x)` | Returns the sine of x (in radians). |
+| `cos(x)` | Returns the cosine of x (in radians). |
+| `tan(x)` | Returns the tangent of x (in radians). |
+| `asin(x)` | Returns the arc sine of x, in radians. |
+| `acos(x)` | Returns the arc cosine of x, in radians. |
+| `atan(x)` | Returns the arc tangent of x, in radians. |
+| `atan2(y, x)` | Returns atan(y/x), in radians, using the signs of both arguments to determine the quadrant. |
+| `hypot(x, y)` | Returns the Euclidean norm, sqrt(x\*x + y\*y). |
+| `degrees(x)` | Converts angle x from radians to degrees. |
+| `radians(x)` | Converts angle x from degrees to radians. |
+
+### Hyperbolic Functions
+
+| Function | Description |
+|----------|-------------|
+| `sinh(x)` | Returns the hyperbolic sine of x. |
+| `cosh(x)` | Returns the hyperbolic cosine of x. |
+| `tanh(x)` | Returns the hyperbolic tangent of x. |
+| `asinh(x)` | Returns the inverse hyperbolic sine of x. |
+| `acosh(x)` | Returns the inverse hyperbolic cosine of x. |
+| `atanh(x)` | Returns the inverse hyperbolic tangent of x. |
+
+### Examples
+
 ```python
-load("math", "sqrt")
+load("math", "sqrt", "pow", "sin", "pi", "log", "ceil", "floor")
 
-sqrt(16.0)   # -> 4.0
-sqrt(25.0)   # -> 5.0
-sqrt(2.0)    # -> 1.4142135623730951
-sqrt(0.0)    # -> 0.0
-sqrt(-1.0)   # Error: sqrt: not a number
+def main():
+    print(sqrt(16))        # 4.0
+    print(pow(2, 10))      # 1024.0
+    print(sin(pi / 2))     # 1.0
+    print(log(100, 10))    # 2.0
+    print(ceil(2.3))       # 3
+    print(floor(2.7))      # 2
+
+main()
 ```
-
-### pow(x, y)
-
-Raise x to the power of y (x^y).
-
-- **Parameters:**
-  - `x` (float) - The base number
-  - `y` (float) - The exponent
-- **Returns:** `float` - x raised to the power y
-- **Raises:** Error if the result is not a valid number (NaN) or infinite
-
-**Examples:**
-```python
-load("math", "pow")
-
-pow(2.0, 3.0)    # -> 8.0 (2³)
-pow(5.0, 2.0)    # -> 25.0 (5²)
-pow(10.0, 0.5)   # -> 3.1622776601683795 (√10)
-pow(2.0, 0.0)    # -> 1.0 (anything⁰ = 1)
-pow(0.0, 2.0)    # -> 0.0 (0² = 0)
-pow(-1.0, 0.5)   # Error: pow: not a number
-```
-
-## Type Requirements
-
-All math functions currently require `float` inputs. To use with integers, convert them first:
-
-```python
-# Wrong - will cause error
-sqrt(16)         # Error: got int, want float
-
-# Correct - convert to float
-sqrt(16.0)       # -> 4.0
-sqrt(float(16))  # -> 4.0 (if float() conversion is available)
-```
-
-## Error Handling
-
-Functions provide clear error messages for invalid inputs:
-
-- **Invalid sqrt results:** `sqrt: not a number`
-- **Invalid pow results:** `pow: not a number` (for operations like (-1)^0.5)
-- **Type errors:** `sqrt: for parameter x: got int, want float`

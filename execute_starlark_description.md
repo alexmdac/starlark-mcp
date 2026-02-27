@@ -39,7 +39,7 @@ main()  # Must call explicitly
 
 ## Syntax Gotchas
 
-* No `**` operator - use repeated multiplication: `x * x` instead of `x**2`
+* No `**` operator - use `load("math", "pow"); pow(x, 2)` or repeated multiplication: `x * x`
 * No built-in functions: `sum()`, `min()`, `max()` - implement manually
 * No string methods: `.rjust()`, `.strip()`, `.upper()` - implement manually
 * Limited list comprehensions - avoid complex expressions like `[f(x) for x in list]`
@@ -56,7 +56,7 @@ main()  # Must call explicitly
 
 ## Built-in Functions
 
-For documentation on available built-in functions (like `sqrt()` and `pow()` via `load("math", "sqrt", "pow")`), see the `starlark://builtins` resource.
+A `math` module is available with functions like `sqrt`, `pow`, `sin`, `cos`, `log`, `ceil`, `floor`, and constants `pi` and `e`. Use `load("math", "sqrt", "sin", "pi")` to import them. See the `starlark://builtins` resource for full documentation.
 
 ## References
 
