@@ -43,7 +43,6 @@ main()  # Must call explicitly
 * No built-in functions: `sum()`, `min()`, `max()` - implement manually
 * No string methods: `.rjust()`, `.strip()`, `.upper()` - implement manually
 * Limited list comprehensions - avoid complex expressions like `[f(x) for x in list]`
-* No `enumerate()` - use `range(len(list))` and index manually
 
 ## Common Patterns
 
