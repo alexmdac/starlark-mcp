@@ -2,29 +2,6 @@
 
 This document describes the built-in functions available in the Starlark MCP server.
 
-## Global Functions
-
-Functions available without importing any modules.
-
-### sorted(iterable)
-
-Sort the elements of an iterable and return a new list.
-
-- **Parameters:** `iterable` - Any iterable (list, tuple, etc.)
-- **Returns:** `list` - A new list with elements sorted in ascending order
-- **Raises:** Error if elements cannot be compared
-
-**Examples:**
-```python
-sorted([3, 1, 4, 1, 5])      # -> [1, 1, 3, 4, 5]
-sorted([3.14, 2.71, 1.41])   # -> [1.41, 2.71, 3.14]
-sorted((5, 2, 8, 1))         # -> [1, 2, 5, 8]
-sorted([1, 2.5, 3])          # -> [1, 2.5, 3]
-sorted([1, "hello"])         # Error: string < int not implemented
-```
-
-**Note:** The original iterable is not modified; `sorted()` returns a new list.
-
 ## Math Module
 
 Mathematical functions for common operations. Import with:
