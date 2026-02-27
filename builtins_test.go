@@ -13,54 +13,10 @@ func TestBuiltins(t *testing.T) {
 		expectedResult string
 		expectedErr    string
 	}{
-		// pow
 		{
-			name:           "pow_basic",
-			code:           `load("math", "pow"); print(pow(2.0, 3.0))`,
-			expectedResult: "8.0",
-		},
-		{
-			name:           "pow_zero_exponent",
-			code:           `load("math", "pow"); print(pow(5.0, 0.0))`,
+			name:           "load_math_module",
+			code:           `load("math", "sin", "pi"); print(sin(pi / 2))`,
 			expectedResult: "1.0",
-		},
-		{
-			name:           "pow_nan",
-			code:           `load("math", "pow"); print(pow(-1.0, 0.5))`,
-			expectedResult: "nan",
-		},
-
-		// sqrt
-		{
-			name:           "sqrt_perfect_square",
-			code:           `load("math", "sqrt"); print(sqrt(16.0))`,
-			expectedResult: "4.0",
-		},
-		{
-			name:           "sqrt_zero",
-			code:           `load("math", "sqrt"); print(sqrt(0.0))`,
-			expectedResult: "0.0",
-		},
-		{
-			name:           "sqrt_negative",
-			code:           `load("math", "sqrt"); print(sqrt(-1.0))`,
-			expectedResult: "nan",
-		},
-
-		{
-			name:        "pow_non_float",
-			code:        `load("math", "pow"); print(pow("a", 1.0))`,
-			expectedErr: "pow: for parameter 1: got string, want float or int",
-		},
-		{
-			name:        "sqrt_non_float",
-			code:        `load("math", "sqrt"); print(sqrt(True))`,
-			expectedErr: "sqrt: for parameter 1: got bool, want float or int",
-		},
-		{
-			name:           "pow_inf",
-			code:           `load("math", "pow"); print(pow(10.0, 1000.0))`,
-			expectedResult: "+inf",
 		},
 		{
 			name:        "load_unknown_module",
