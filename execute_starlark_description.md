@@ -7,9 +7,8 @@ Starlark is a Python-like language with important restrictions and syntax differ
 
 * All top-level code must be in functions (no bare loops/conditionals)
 * Operator chaining requires parentheses: use (a <= b) and (b < c) not a <= b < c  
-* No f-strings or % formatting - use string concatenation with str()
-* No tuple unpacking in assignments beyond simple cases
-* More restrictive about operator precedence
+* No f-strings - use `%` formatting (`"hello %s" % name`) or string concatenation
+* No star unpacking (`a, *b = list`)
 
 ## Starlark Restrictions
 
@@ -40,18 +39,15 @@ main()  # Must call explicitly
 ## Syntax Gotchas
 
 * No `**` operator - use `load("math", "pow"); pow(x, 2)` or repeated multiplication: `x * x`
-* No built-in functions: `sum()`, `min()`, `max()` - implement manually
-* No string methods: `.rjust()`, `.strip()`, `.upper()` - implement manually
-* Limited list comprehensions - avoid complex expressions like `[f(x) for x in list]`
+* No built-in `sum()` - implement manually
+* Most Python string methods are available (`.upper()`, `.lower()`, `.strip()`, `.replace()`, `.split()`, `.join()`, `.format()`, etc). Notable missing: `.rjust()`, `.ljust()`, `.center()`
+* List comprehensions work, including with function calls: `[f(x) for x in list]`
 
 ## Common Patterns
 
 * String building: use concatenation like s = s + "text"
-* Manual sum: `total = 0; for x in numbers: total = total + x`
-* String padding: implement `right_justify(text, width)` function
-* Avoid complex expressions: break into multiple lines
-* Use explicit str() conversion for print statements
-* Put all execution logic in functions
+* Manual sum: use a for loop since `sum()` is not available
+* Put all execution logic in functions (no top-level control flow)
 
 ## Built-in Functions
 
