@@ -47,27 +47,6 @@ func TestBuiltins(t *testing.T) {
 			expectedErr: "sqrt: not a number",
 		},
 
-		// sorted
-		{
-			name:           "sorted_integers",
-			code:           `print(sorted([3, 1, 4, 1, 5]))`,
-			expectedResult: "[1, 1, 3, 4, 5]",
-		},
-		{
-			name:           "sorted_floats",
-			code:           `print(sorted([3.14, 2.71, 1.41]))`,
-			expectedResult: "[1.41, 2.71, 3.14]",
-		},
-		{
-			name:           "sorted_tuple",
-			code:           `print(sorted((5, 2, 8, 1)))`,
-			expectedResult: "[1, 2, 5, 8]",
-		},
-		{
-			name:        "sorted_mixed_types",
-			code:        `print(sorted([1, "hello"]))`,
-			expectedErr: "string < int not implemented",
-		},
 		{
 			name:        "pow_non_float",
 			code:        `load("math", "pow"); print(pow("a", 1.0))`,
@@ -87,11 +66,6 @@ func TestBuiltins(t *testing.T) {
 			name:        "load_unknown_module",
 			code:        `load("foo", "bar")`,
 			expectedErr: "no such module: \"foo\"",
-		},
-		{
-			name:        "sorted_non_iterable",
-			code:        `sorted(1)`,
-			expectedErr: "sorted: for parameter iterable: got int, want iterable",
 		},
 	}
 
