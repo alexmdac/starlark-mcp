@@ -4,7 +4,8 @@ tasks:
   setup:
     desc: Set up local development environment
     cmds:
-      - go tool lefthook install
+      - mise install
+      - lefthook install
 
   fmt:
     desc: Check code formatting
@@ -25,7 +26,7 @@ tasks:
   staticcheck:
     desc: Run staticcheck
     cmds:
-      - go tool staticcheck ./...
+      - staticcheck ./...
 
   test:
     desc: Run tests
