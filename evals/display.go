@@ -132,6 +132,15 @@ func printSummary(model string, results []evalResult) {
 		3: "INTERMEDIATE",
 		4: "HARD",
 		5: "EXPERT",
+		6: "CHALLENGING",
+	}
+
+	// Find the highest tier in use.
+	maxTier := 0
+	for _, r := range results {
+		if r.ec.tier > maxTier {
+			maxTier = r.ec.tier
+		}
 	}
 
 	// Find the longest case name for column sizing.
@@ -158,7 +167,7 @@ func printSummary(model string, results []evalResult) {
 	totalTokensIn := 0
 	totalTokensOut := 0
 
-	for tier := 1; tier <= 5; tier++ {
+	for tier := 1; tier <= maxTier; tier++ {
 		var tierResults []evalResult
 		for _, r := range results {
 			if r.ec.tier == tier {
