@@ -116,9 +116,7 @@ func runEval(t *testing.T, client *evals.Client, ec evals.Case) evalResult {
 			Tools:     []evals.ToolDef{toolDef},
 		}
 
-		ctx, cancel := context.WithTimeout(context.Background(), 120*time.Second)
-		resp, err := client.SendRequest(ctx, req)
-		cancel()
+		resp, err := client.SendRequest(context.Background(), req)
 		if err != nil {
 			t.Fatalf("API request failed: %v", err)
 		}

@@ -9,6 +9,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"time"
 )
 
 // Content block helpers using map[string]any to avoid JSON polymorphism issues.
@@ -124,6 +125,7 @@ type Client struct {
 	apiKey  string
 	model   string
 	baseURL string
+	timeout time.Duration
 	http    *http.Client
 }
 
@@ -133,12 +135,16 @@ func NewClient(apiKey, model, baseURL string) *Client {
 		apiKey:  apiKey,
 		model:   model,
 		baseURL: baseURL,
+		timeout: 120 * time.Second,
 		http:    &http.Client{},
 	}
 }
 
 // SendRequest sends a request to the Anthropic Messages API.
 func (c *Client) SendRequest(ctx context.Context, req *Request) (*Response, error) {
+	ctx, cancel := context.WithTimeout(ctx, c.timeout)
+	defer cancel()
+
 	req.Model = c.model
 
 	body, err := json.Marshal(req)
