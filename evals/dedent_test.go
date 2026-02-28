@@ -1,4 +1,4 @@
-//go:build eval
+// No build tag: see dedent.go.
 
 package main
 
