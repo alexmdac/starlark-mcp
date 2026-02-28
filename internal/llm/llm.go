@@ -1,5 +1,4 @@
-// Package llm provides a provider-agnostic interface for LLM chat completions
-// with tool use support.
+// Package llm provides a provider-agnostic interface for LLM chat completions.
 package llm
 
 import (
