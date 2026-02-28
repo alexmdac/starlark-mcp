@@ -51,6 +51,31 @@ func TestDedent(t *testing.T) {
 			`,
 			want: "",
 		},
+		{
+			name: "multiple leading newlines",
+			in: "\n\n\n\t\t\t\thello\n\t\t\t\tworld\n\t\t\t",
+			want: "hello\nworld",
+		},
+		{
+			name: "multiple trailing newlines",
+			in: "\n\t\t\t\thello\n\t\t\t\tworld\n\t\t\t\n\n\n",
+			want: "hello\nworld",
+		},
+		{
+			name: "trailing spaces on closing line",
+			in: "\n\t\t\t\thello\n\t\t\t\tworld\n\t\t\t  \t",
+			want: "hello\nworld",
+		},
+		{
+			name: "only whitespace",
+			in: "\n\t\t\t\n  \n\t\n",
+			want: "",
+		},
+		{
+			name: "no leading newline",
+			in: "\t\t\thello\n\t\t\tworld\n\t\t",
+			want: "hello\nworld",
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
