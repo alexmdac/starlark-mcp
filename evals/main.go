@@ -191,11 +191,7 @@ func runEval(llm *Client, session *mcp.ClientSession, toolDefs []ToolDef, ec Cas
 		}
 
 		if toolUse == nil {
-			messages = append(messages, Message{
-				Role:    "user",
-				Content: []map[string]any{TextBlock("Please use a tool to solve this.")},
-			})
-			continue
+			break
 		}
 
 		// Call the tool via MCP.
