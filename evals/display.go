@@ -261,60 +261,37 @@ func printSummaryTable(model string, numRuns int, nameWidth int, results []caseR
 		colorBold, colorCyan, totalScore/float64(totalRuns), totalPassed, totalRuns, overallPassRate, totalTokensIn, totalTokensOut, colorReset)
 	fmt.Printf("%s%s%s\n", colorCyan, strings.Repeat("─", tableWidth), colorReset)
 
-	// Print details for any run that had failed attempts (even if it eventually passed).
+	// Print failed run details for cases that didn't pass every run.
 	for _, cr := range results {
-		type retryRun struct {
-			index  int
-			r      evalResult
-			passed bool
+		type failedRun struct {
+			index int
+			r     evalResult
 		}
-		var retries []retryRun
+		var failed []failedRun
 		for ri, r := range cr.Runs {
 			if !r.Passed {
-				retries = append(retries, retryRun{ri, r, false})
-			} else if r.Attempts > 1 {
-				retries = append(retries, retryRun{ri, r, true})
+				failed = append(failed, failedRun{ri, r})
 			}
 		}
-		if len(retries) == 0 {
+		if len(failed) == 0 {
 			continue
 		}
 
-		failedCount := 0
-		for _, r := range retries {
-			if !r.passed {
-				failedCount++
-			}
-		}
-		retriedCount := len(retries) - failedCount
-
-		switch {
-		case failedCount > 0 && retriedCount > 0:
-			fmt.Printf("\n%s%s%d failed, %d retried: %s%s\n",
-				colorBold, colorYellow, failedCount, retriedCount, cr.ec.name, colorReset)
-		case failedCount == len(cr.Runs):
+		passedCount := len(cr.Runs) - len(failed)
+		if passedCount > 0 {
+			fmt.Printf("\n%s%sFAILED RUNS (%d/%d failed): %s%s\n",
+				colorBold, colorYellow, len(failed), len(cr.Runs), cr.ec.name, colorReset)
+		} else {
 			fmt.Printf("\n%s%sFAILED (all %d runs): %s%s\n",
 				colorBold, colorRed, len(cr.Runs), cr.ec.name, colorReset)
-		case failedCount > 0:
-			fmt.Printf("\n%s%sFAILED (%d/%d runs): %s%s\n",
-				colorBold, colorYellow, failedCount, len(cr.Runs), cr.ec.name, colorReset)
-		default:
-			fmt.Printf("\n%s%sRETRIED (%d/%d runs): %s%s\n",
-				colorBold, colorDim, retriedCount, len(cr.Runs), cr.ec.name, colorReset)
 		}
-		for _, rr := range retries {
-			if len(rr.r.Outputs) == 0 {
-				fmt.Printf("%sRun %d: no output%s\n", colorDim, rr.index+1, colorReset)
+		for _, f := range failed {
+			if len(f.r.Outputs) == 0 {
+				fmt.Printf("%sRun %d: no output%s\n", colorDim, f.index+1, colorReset)
 				continue
 			}
-			// For passed runs, show only the failed attempts (all but the last).
-			// For failed runs, show all attempts.
-			outputs := rr.r.Outputs
-			if rr.passed {
-				outputs = outputs[:len(outputs)-1]
-			}
-			for ai, out := range outputs {
-				fmt.Printf("%sRun %d, attempt %d:%s\n%s\n", colorDim, rr.index+1, ai+1, colorReset, out)
+			for ai, out := range f.r.Outputs {
+				fmt.Printf("%sRun %d, attempt %d:%s\n%s\n", colorDim, f.index+1, ai+1, colorReset, out)
 			}
 		}
 	}
