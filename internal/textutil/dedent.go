@@ -1,15 +1,12 @@
-// No build tag: dedent is a pure utility used by eval cases but tested
-// unconditionally so that "go test ./evals/" runs its tests without
-// -tags eval. All other files in this package require the eval tag.
-
-package main
+// Package textutil provides text manipulation utilities.
+package textutil
 
 import "strings"
 
-// dedent dedents a backtick string for use as an inline literal.
+// Dedent dedents a backtick string for use as an inline literal.
 // It strips leading/trailing blank lines, computes the longest common
 // whitespace prefix across all non-empty lines, and removes it.
-func dedent(s string) string {
+func Dedent(s string) string {
 	s = strings.TrimLeft(s, "\n")
 	s = strings.TrimRight(s, " \t\n")
 	if s == "" {

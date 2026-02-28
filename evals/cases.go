@@ -6,7 +6,12 @@ import (
 	"math"
 	"strconv"
 	"strings"
+
+	"github.com/alexmdac/starlark-mcp/internal/textutil"
 )
+
+// dedent is a short alias so callers don't need the package qualifier.
+var dedent = textutil.Dedent
 
 // maxTier is the number of difficulty tiers. When adding a new tier, bump this
 // and add the label to tierNames and cases to the cases slice below.
