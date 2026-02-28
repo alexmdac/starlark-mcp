@@ -16,6 +16,62 @@ type evalCase struct {
 	judge  func(output string) bool
 }
 
+// hereDoc dedents a backtick string for use as an inline literal.
+// It strips leading/trailing blank lines, computes the longest common
+// whitespace prefix across all non-empty lines, and removes it.
+func hereDoc(s string) string {
+	lines := strings.Split(s, "\n")
+
+	// Strip leading blank lines.
+	for len(lines) > 0 && strings.TrimSpace(lines[0]) == "" {
+		lines = lines[1:]
+	}
+	// Strip trailing blank lines.
+	for len(lines) > 0 && strings.TrimSpace(lines[len(lines)-1]) == "" {
+		lines = lines[:len(lines)-1]
+	}
+	if len(lines) == 0 {
+		return ""
+	}
+
+	// Find longest common whitespace prefix (considering only non-empty lines).
+	prefix := ""
+	first := true
+	for _, line := range lines {
+		if strings.TrimSpace(line) == "" {
+			continue
+		}
+		ws := line[:len(line)-len(strings.TrimLeft(line, " \t"))]
+		if first {
+			prefix = ws
+			first = false
+		} else {
+			// Shorten prefix to common length.
+			n := len(prefix)
+			if len(ws) < n {
+				n = len(ws)
+			}
+			for i := 0; i < n; i++ {
+				if prefix[i] != ws[i] {
+					n = i
+					break
+				}
+			}
+			prefix = prefix[:n]
+		}
+	}
+
+	// Remove the common prefix from each line.
+	for i, line := range lines {
+		if strings.TrimSpace(line) == "" {
+			lines[i] = ""
+		} else {
+			lines[i] = line[len(prefix):]
+		}
+	}
+	return strings.Join(lines, "\n")
+}
+
 // exactOutput trims trailing whitespace from both expected and actual, then compares.
 func exactOutput(expected string) func(string) bool {
 	return func(output string) bool {
@@ -132,26 +188,28 @@ var cases = []evalCase{
 		tier: 1,
 		prompt: `Print the integers 1 to 20, one per line. Each line should contain just
 the number, nothing else.`,
-		judge: exactOutput(`1
-2
-3
-4
-5
-6
-7
-8
-9
-10
-11
-12
-13
-14
-15
-16
-17
-18
-19
-20`),
+		judge: exactOutput(hereDoc(`
+			1
+			2
+			3
+			4
+			5
+			6
+			7
+			8
+			9
+			10
+			11
+			12
+			13
+			14
+			15
+			16
+			17
+			18
+			19
+			20
+		`)),
 	},
 	{
 		name: "reverse_string",
@@ -175,36 +233,38 @@ reversed string, nothing else.`,
 of 3 print "Fizz", for multiples of 5 print "Buzz", for multiples of both
 print "FizzBuzz", otherwise print the number. Print only the output,
 nothing else.`,
-		judge: exactOutput(`1
-2
-Fizz
-4
-Buzz
-Fizz
-7
-8
-Fizz
-Buzz
-11
-Fizz
-13
-14
-FizzBuzz
-16
-17
-Fizz
-19
-Buzz
-Fizz
-22
-23
-Fizz
-Buzz
-26
-Fizz
-28
-29
-FizzBuzz`),
+		judge: exactOutput(hereDoc(`
+			1
+			2
+			Fizz
+			4
+			Buzz
+			Fizz
+			7
+			8
+			Fizz
+			Buzz
+			11
+			Fizz
+			13
+			14
+			FizzBuzz
+			16
+			17
+			Fizz
+			19
+			Buzz
+			Fizz
+			22
+			23
+			Fizz
+			Buzz
+			26
+			Fizz
+			28
+			29
+			FizzBuzz
+		`)),
 	},
 	{
 		name: "is_prime_104729",
@@ -241,16 +301,18 @@ no prefix (no "0b"). Print only the binary string, nothing else.`,
 		prompt: `Print the first 10 rows of Pascal's triangle (rows 0 through 9). Print
 one row per line, with numbers separated by single spaces. Row 0 is "1",
 row 1 is "1 1", etc. Print only the triangle, nothing else.`,
-		judge: exactOutput(`1
-1 1
-1 2 1
-1 3 3 1
-1 4 6 4 1
-1 5 10 10 5 1
-1 6 15 20 15 6 1
-1 7 21 35 35 21 7 1
-1 8 28 56 70 56 28 8 1
-1 9 36 84 126 126 84 36 9 1`),
+		judge: exactOutput(hereDoc(`
+			1
+			1 1
+			1 2 1
+			1 3 3 1
+			1 4 6 4 1
+			1 5 10 10 5 1
+			1 6 15 20 15 6 1
+			1 7 21 35 35 21 7 1
+			1 8 28 56 70 56 28 8 1
+			1 9 36 84 126 126 84 36 9 1
+		`)),
 	},
 
 	// ── Tier 3: Intermediate ──
@@ -261,9 +323,11 @@ row 1 is "1 1", etc. Print only the triangle, nothing else.`,
 Print three lines: first line is the count of primes found, second line
 is the first 10 primes separated by spaces, third line is the last 10
 primes separated by spaces. Print only these three lines, nothing else.`,
-		judge: exactOutput(`1229
-2 3 5 7 11 13 17 19 23 29
-9887 9901 9907 9923 9929 9931 9941 9949 9967 9973`),
+		judge: exactOutput(hereDoc(`
+			1229
+			2 3 5 7 11 13 17 19 23 29
+			9887 9901 9907 9923 9929 9931 9941 9949 9967 9973
+		`)),
 	},
 	{
 		name: "fibonacci_30",
@@ -271,36 +335,38 @@ primes separated by spaces. Print only these three lines, nothing else.`,
 		prompt: `Print the first 30 Fibonacci numbers F(0) through F(29), one per line.
 F(0)=0, F(1)=1, F(n)=F(n-1)+F(n-2). Print only the numbers, one per
 line, nothing else.`,
-		judge: exactOutput(`0
-1
-1
-2
-3
-5
-8
-13
-21
-34
-55
-89
-144
-233
-377
-610
-987
-1597
-2584
-4181
-6765
-10946
-17711
-28657
-46368
-75025
-121393
-196418
-317811
-514229`),
+		judge: exactOutput(hereDoc(`
+			0
+			1
+			1
+			2
+			3
+			5
+			8
+			13
+			21
+			34
+			55
+			89
+			144
+			233
+			377
+			610
+			987
+			1597
+			2584
+			4181
+			6765
+			10946
+			17711
+			28657
+			46368
+			75025
+			121393
+			196418
+			317811
+			514229
+		`)),
 	},
 	{
 		name: "balanced_parentheses",
@@ -309,13 +375,15 @@ line, nothing else.`,
 For each string, print "true" if balanced or "false" if not, one result
 per line in order. The strings are: "(()())", "(()", "()()", ")(", "",
 "((()))", "(()))". Print only "true" or "false" on each line, nothing else.`,
-		judge: exactOutput(`true
-false
-true
-false
-true
-true
-false`),
+		judge: exactOutput(hereDoc(`
+			true
+			false
+			true
+			false
+			true
+			true
+			false
+		`)),
 	},
 	{
 		name: "longest_common_subsequence",
@@ -330,14 +398,16 @@ false`),
 		prompt: `Convert each of the following integers to Roman numerals and print each
 on its own line: 1, 4, 9, 14, 42, 99, 1994, 3999. Print only the Roman
 numeral strings, one per line, nothing else.`,
-		judge: exactOutput(`I
-IV
-IX
-XIV
-XLII
-XCIX
-MCMXCIV
-MMMCMXCIX`),
+		judge: exactOutput(hereDoc(`
+			I
+			IV
+			IX
+			XIV
+			XLII
+			XCIX
+			MCMXCIV
+			MMMCMXCIX
+		`)),
 	},
 	{
 		name: "run_length_encoding",
@@ -403,8 +473,10 @@ Matrix A (2x3): [[1, 2, 3], [4, 5, 6]]
 Matrix B (3x2): [[7, 8], [9, 10], [11, 12]]
 Print the resulting 2x2 matrix, one row per line, with numbers separated
 by spaces. Print only the matrix, nothing else.`,
-		judge: exactOutput(`58 64
-139 154`),
+		judge: exactOutput(hereDoc(`
+			58 64
+			139 154
+		`)),
 	},
 	{
 		name: "spiral_matrix",
@@ -413,11 +485,13 @@ by spaces. Print only the matrix, nothing else.`,
 spiral order starting from the top-left. Print the matrix with one row
 per line, numbers separated by spaces. Print only the matrix,
 nothing else.`,
-		judge: exactOutput(`1 2 3 4 5
-16 17 18 19 6
-15 24 25 20 7
-14 23 22 21 8
-13 12 11 10 9`),
+		judge: exactOutput(hereDoc(`
+			1 2 3 4 5
+			16 17 18 19 6
+			15 24 25 20 7
+			14 23 22 21 8
+			13 12 11 10 9
+		`)),
 	},
 	{
 		name: "knapsack_01",
@@ -450,15 +524,17 @@ substring, nothing else.`,
 0 0 0 0 8 0 0 7 9
 Print the completed 9x9 grid with numbers separated by spaces, one row
 per line. Print only the grid, nothing else.`,
-		judge: exactOutput(`5 3 4 6 7 8 9 1 2
-6 7 2 1 9 5 3 4 8
-1 9 8 3 4 2 5 6 7
-8 5 9 7 6 1 4 2 3
-4 2 6 8 5 3 7 9 1
-7 1 3 9 2 4 8 5 6
-9 6 1 5 3 7 2 8 4
-2 8 7 4 1 9 6 3 5
-3 4 5 2 8 6 1 7 9`),
+		judge: exactOutput(hereDoc(`
+			5 3 4 6 7 8 9 1 2
+			6 7 2 1 9 5 3 4 8
+			1 9 8 3 4 2 5 6 7
+			8 5 9 7 6 1 4 2 3
+			4 2 6 8 5 3 7 9 1
+			7 1 3 9 2 4 8 5 6
+			9 6 1 5 3 7 2 8 4
+			2 8 7 4 1 9 6 3 5
+			3 4 5 2 8 6 1 7 9
+		`)),
 	},
 
 	// ── Tier 5: Expert ──
@@ -470,14 +546,16 @@ state has live cells (1) at positions (row, col, 0-indexed): (1,2),
 (2,3), (3,1), (3,2), (3,3). All other cells are dead (0). Print the
 final 8x8 grid after 10 steps, one row per line, with cells separated
 by spaces. Print only the grid, nothing else.`,
-		judge: exactOutput(`0 0 0 0 0 0 0 0
-0 0 0 0 0 0 0 0
-0 0 0 0 0 0 0 0
-0 0 0 0 0 0 0 0
-0 0 0 0 0 1 0 0
-0 0 0 1 0 1 0 0
-0 0 0 0 1 1 0 0
-0 0 0 0 0 0 0 0`),
+		judge: exactOutput(hereDoc(`
+			0 0 0 0 0 0 0 0
+			0 0 0 0 0 0 0 0
+			0 0 0 0 0 0 0 0
+			0 0 0 0 0 0 0 0
+			0 0 0 0 0 1 0 0
+			0 0 0 1 0 1 0 0
+			0 0 0 0 1 1 0 0
+			0 0 0 0 0 0 0 0
+		`)),
 	},
 	{
 		name: "n_queens",
@@ -512,10 +590,12 @@ an integer, nothing else.`,
 Print each word and its count in the format "word count", one per line,
 sorted by count descending then alphabetically. Print only the
 word-count lines, nothing else.`,
-		judge: exactOutput(`the 3
-cat 2
-sat 2
-mat 1
-on 1`),
+		judge: exactOutput(hereDoc(`
+			the 3
+			cat 2
+			sat 2
+			mat 1
+			on 1
+		`)),
 	},
 }
