@@ -40,25 +40,19 @@ type caseResults struct {
 
 func main() {
 	runsFlag := flag.Int("runs", 5, "number of independent runs per eval case")
+	llmFlag := flag.String("llm", "claude-sonnet-4-6", "model name to use")
+	llmURLFlag := flag.String("llm-url", "http://169.254.169.254/gateway/llm/anthropic", "base URL for the Anthropic API")
 	flag.Parse()
 	numRuns := *runsFlag
 	if numRuns < 1 {
 		numRuns = 1
 	}
+	model := *llmFlag
+	baseURL := *llmURLFlag
 
 	apiKey := os.Getenv("ANTHROPIC_API_KEY")
 	if apiKey == "" {
 		apiKey = "unspecified"
-	}
-
-	model := os.Getenv("EVAL_MODEL")
-	if model == "" {
-		model = "claude-sonnet-4-6"
-	}
-
-	baseURL := os.Getenv("ANTHROPIC_BASE_URL")
-	if baseURL == "" {
-		baseURL = "http://169.254.169.254/gateway/llm/anthropic"
 	}
 
 	ctx, cancel := signal.NotifyContext(context.Background(), os.Interrupt)
