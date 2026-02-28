@@ -372,7 +372,7 @@ characters with spaces. Print only the board, nothing else.`,
 		tier: 5,
 		prompt: `Compute 50! (50 factorial). Starlark supports arbitrary-precision
 integers. Print only the number, nothing else.`,
-		judge: exactOutput("30414093201713378043612608166979581188299763898377856820553615673507270386838265252138185463579944899077552316254066904512000000000000"),
+		judge: exactOutput("30414093201713378043612608166064768844377641568960512000000000000"),
 	},
 	{
 		name: "postfix_eval",
