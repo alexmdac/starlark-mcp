@@ -10,6 +10,7 @@ import (
 	"math"
 	"os"
 	"strings"
+	"sync"
 
 	"github.com/alexmdac/starlark-mcp/server"
 	"github.com/modelcontextprotocol/go-sdk/mcp"
@@ -43,40 +44,46 @@ func main() {
 
 	llm := NewClient(apiKey, model, baseURL)
 
-	// Set up MCP server + client via in-memory transport.
-	ctx := context.Background()
-	t1, t2 := mcp.NewInMemoryTransports()
-	srv := server.New()
-	mcpClient := mcp.NewClient(&mcp.Implementation{Name: "eval-client"}, nil)
-
-	if _, err := srv.Connect(ctx, t1, nil); err != nil {
-		fmt.Fprintf(os.Stderr, "failed to connect MCP server: %v\n", err)
-		os.Exit(1)
-	}
-	session, err := mcpClient.Connect(ctx, t2, nil)
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "failed to connect MCP client: %v\n", err)
-		os.Exit(1)
-	}
-	defer session.Close()
-
-	// Discover tools from the MCP server.
-	toolDefs, err := mcpToolDefs(ctx, session)
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "failed to list tools: %v\n", err)
-		os.Exit(1)
-	}
-
 	results := make([]evalResult, len(Cases))
+	var wg sync.WaitGroup
 	for i, ec := range Cases {
-		fmt.Fprintf(os.Stderr, "Running %s...\n", ec.Name)
-		results[i] = runEval(llm, session, toolDefs, ec)
-		mark := "✗"
-		if results[i].Passed {
-			mark = "✓"
-		}
-		fmt.Fprintf(os.Stderr, "  %s (attempts: %d)\n", mark, results[i].Attempts)
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			fmt.Fprintf(os.Stderr, "Running %s...\n", ec.Name)
+
+			// Each eval gets its own MCP session for isolation.
+			ctx := context.Background()
+			t1, t2 := mcp.NewInMemoryTransports()
+			srv := server.New()
+			mcpClient := mcp.NewClient(&mcp.Implementation{Name: "eval-client"}, nil)
+
+			if _, err := srv.Connect(ctx, t1, nil); err != nil {
+				fmt.Fprintf(os.Stderr, "  %s: failed to connect MCP server: %v\n", ec.Name, err)
+				return
+			}
+			session, err := mcpClient.Connect(ctx, t2, nil)
+			if err != nil {
+				fmt.Fprintf(os.Stderr, "  %s: failed to connect MCP client: %v\n", ec.Name, err)
+				return
+			}
+			defer session.Close()
+
+			toolDefs, err := mcpToolDefs(ctx, session)
+			if err != nil {
+				fmt.Fprintf(os.Stderr, "  %s: failed to list tools: %v\n", ec.Name, err)
+				return
+			}
+
+			results[i] = runEval(llm, session, toolDefs, ec)
+			mark := "✗"
+			if results[i].Passed {
+				mark = "✓"
+			}
+			fmt.Fprintf(os.Stderr, "  %s %s (attempts: %d)\n", mark, ec.Name, results[i].Attempts)
+		}()
 	}
+	wg.Wait()
 
 	printSummary(model, results)
 }
