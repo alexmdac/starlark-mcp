@@ -11,6 +11,7 @@ import (
 	"os"
 	"strings"
 	"sync"
+	"time"
 
 	"github.com/alexmdac/starlark-mcp/server"
 	"github.com/modelcontextprotocol/go-sdk/mcp"
@@ -44,7 +45,7 @@ func main() {
 
 	llm := NewClient(apiKey, model, baseURL)
 
-	fmt.Fprintf(os.Stderr, "Running %d evals...\n", len(Cases))
+	disp := newDisplay(Cases)
 	results := make([]evalResult, len(Cases))
 	var wg sync.WaitGroup
 	for i, ec := range Cases {
@@ -59,33 +60,119 @@ func main() {
 			mcpClient := mcp.NewClient(&mcp.Implementation{Name: "eval-client"}, nil)
 
 			if _, err := srv.Connect(ctx, t1, nil); err != nil {
-				fmt.Fprintf(os.Stderr, "  %s: failed to connect MCP server: %v\n", ec.Name, err)
+				disp.finish(i, false, 0, 0)
 				return
 			}
 			session, err := mcpClient.Connect(ctx, t2, nil)
 			if err != nil {
-				fmt.Fprintf(os.Stderr, "  %s: failed to connect MCP client: %v\n", ec.Name, err)
+				disp.finish(i, false, 0, 0)
 				return
 			}
 			defer session.Close()
 
 			toolDefs, err := mcpToolDefs(ctx, session)
 			if err != nil {
-				fmt.Fprintf(os.Stderr, "  %s: failed to list tools: %v\n", ec.Name, err)
+				disp.finish(i, false, 0, 0)
 				return
 			}
 
 			results[i] = runEval(llm, session, toolDefs, ec)
-			mark := "✗"
-			if results[i].Passed {
-				mark = "✓"
-			}
-			fmt.Fprintf(os.Stderr, "  %s %s (attempts: %d)\n", mark, ec.Name, results[i].Attempts)
+			disp.finish(i, results[i].Passed, results[i].Attempts, time.Since(disp.startTimes[i]))
 		}()
 	}
 	wg.Wait()
+	disp.stop()
 
 	printSummary(model, results)
+}
+
+// display manages live terminal output for eval progress.
+type display struct {
+	mu         sync.Mutex
+	cases      []Case
+	startTimes []time.Time
+	done       []bool
+	passed     []bool
+	attempts   []int
+	durations  []time.Duration
+	stopCh     chan struct{}
+}
+
+func newDisplay(cases []Case) *display {
+	now := time.Now()
+	d := &display{
+		cases:      cases,
+		startTimes: make([]time.Time, len(cases)),
+		done:       make([]bool, len(cases)),
+		passed:     make([]bool, len(cases)),
+		attempts:   make([]int, len(cases)),
+		durations:  make([]time.Duration, len(cases)),
+		stopCh:     make(chan struct{}),
+	}
+	for i := range cases {
+		d.startTimes[i] = now
+	}
+	// Print initial lines.
+	for range cases {
+		fmt.Fprint(os.Stderr, "\n")
+	}
+	d.render()
+	go d.loop()
+	return d
+}
+
+func (d *display) loop() {
+	ticker := time.NewTicker(200 * time.Millisecond)
+	defer ticker.Stop()
+	for {
+		select {
+		case <-d.stopCh:
+			return
+		case <-ticker.C:
+			d.render()
+		}
+	}
+}
+
+func (d *display) finish(i int, passed bool, attempts int, dur time.Duration) {
+	d.mu.Lock()
+	d.done[i] = true
+	d.passed[i] = passed
+	d.attempts[i] = attempts
+	d.durations[i] = dur
+	d.mu.Unlock()
+	d.render()
+}
+
+func (d *display) stop() {
+	close(d.stopCh)
+	d.render()
+}
+
+func (d *display) render() {
+	d.mu.Lock()
+	defer d.mu.Unlock()
+
+	n := len(d.cases)
+	// Move cursor up n lines.
+	fmt.Fprintf(os.Stderr, "\033[%dA", n)
+
+	now := time.Now()
+	for i, c := range d.cases {
+		// Clear line and write status.
+		fmt.Fprintf(os.Stderr, "\033[2K")
+		if d.done[i] {
+			mark := "✗"
+			if d.passed[i] {
+				mark = "✓"
+			}
+			fmt.Fprintf(os.Stderr, "  %s %s (%.1fs, %d attempts)\n",
+				mark, c.Name, d.durations[i].Seconds(), d.attempts[i])
+		} else {
+			elapsed := now.Sub(d.startTimes[i])
+			fmt.Fprintf(os.Stderr, "  ⋯ %s (%.1fs)\n", c.Name, elapsed.Seconds())
+		}
+	}
 }
 
 // mcpToolDefs calls ListTools on the MCP session and converts the results
@@ -172,7 +259,6 @@ func runEval(llm *Client, session *mcp.ClientSession, toolDefs []ToolDef, ec Cas
 
 		resp, err := llm.SendRequest(context.Background(), req)
 		if err != nil {
-			fmt.Fprintf(os.Stderr, "API request failed for %s: %v\n", ec.Name, err)
 			break
 		}
 
