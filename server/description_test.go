@@ -4,10 +4,21 @@ import (
 	"context"
 	"strings"
 	"testing"
+
+	"github.com/alexmdac/starlark-mcp/internal/textutil"
 )
+
+// dedent is a short alias so callers don't need the package qualifier.
+var dedent = textutil.Dedent
 
 // Tests that verify claims made in execute_starlark_description.md.
 // If a test here fails, update the description to match reality.
+//
+// These tests exist because LLMs editing the description will confidently
+// hallucinate limitations that don't exist. For example, an LLM once added
+// abs(), enumerate(), and zip() to the "Missing Builtins" list — all three
+// are actually available in Starlark. Without these tests, those false claims
+// would have shipped and confused the model using the tool.
 
 func TestDescription_Works(t *testing.T) {
 	tests := []struct {
@@ -59,23 +70,26 @@ func TestDescription_Errors(t *testing.T) {
 		{"top-level for loop", `for i in range(1): print(i)`, "for loop not within a function"},
 		{"top-level if", `if True: print("yes")`, "if statement not within a function"},
 		{"operator chaining", `print(1 < 2 < 3)`, "does not associate with"},
-		{"f-strings", `
-def main():
-    x = 42
-    print(f"val {x}")
-main()`, "got string literal"},
+		{"f-strings", dedent(`
+			def main():
+			    x = 42
+			    print(f"val {x}")
+			main()
+		`), "got string literal"},
 		{"star unpacking", `a, *b = [1, 2, 3]`, "got '*'"},
-		{"while loop", `
-def main():
-    x = 0
-    while x < 3:
-        x += 1
-main()`, "does not support while loops"},
-		{"recursion", `
-def fact(n):
-    if n <= 1: return 1
-    return n * fact(n - 1)
-print(fact(5))`, "called recursively"},
+		{"while loop", dedent(`
+			def main():
+			    x = 0
+			    while x < 3:
+			        x += 1
+			main()
+		`), "does not support while loops"},
+		{"recursion", dedent(`
+			def fact(n):
+			    if n <= 1: return 1
+			    return n * fact(n - 1)
+			print(fact(5))
+		`), "called recursively"},
 		{"class", `class Foo: pass`, "got class"},
 		{"power operator", `print(2 ** 10)`, "got '**'"},
 		{"no sum builtin", `print(sum([1,2,3]))`, "undefined: sum"},

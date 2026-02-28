@@ -1,6 +1,4 @@
-// No build tag: see dedent.go.
-
-package main
+package textutil
 
 import (
 	"testing"
@@ -79,9 +77,9 @@ func TestDedent(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got := dedent(tt.in)
+			got := Dedent(tt.in)
 			if got != tt.want {
-				t.Errorf("dedent() = %q, want %q", got, tt.want)
+				t.Errorf("Dedent() = %q, want %q", got, tt.want)
 			}
 		})
 	}
