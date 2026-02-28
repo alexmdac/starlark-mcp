@@ -186,8 +186,10 @@ var cases = []evalCase{
 	{
 		name: "print_numbers_1_to_20",
 		tier: 1,
-		prompt: `Print the integers 1 to 20, one per line. Each line should contain just
-the number, nothing else.`,
+		prompt: hereDoc(`
+			Print the integers 1 to 20, one per line. Each line should contain just
+			the number, nothing else.
+		`),
 		judge: exactOutput(hereDoc(`
 			1
 			2
@@ -214,8 +216,10 @@ the number, nothing else.`,
 	{
 		name: "reverse_string",
 		tier: 1,
-		prompt: `Reverse the string "Hello, World!" and print the result. Print only the
-reversed string, nothing else.`,
+		prompt: hereDoc(`
+			Reverse the string "Hello, World!" and print the result. Print only the
+			reversed string, nothing else.
+		`),
 		judge: exactOutput("!dlroW ,olleH"),
 	},
 	{
@@ -229,10 +233,12 @@ reversed string, nothing else.`,
 	{
 		name: "fizzbuzz",
 		tier: 2,
-		prompt: `Print FizzBuzz for numbers 1 through 30, one entry per line. For multiples
-of 3 print "Fizz", for multiples of 5 print "Buzz", for multiples of both
-print "FizzBuzz", otherwise print the number. Print only the output,
-nothing else.`,
+		prompt: hereDoc(`
+			Print FizzBuzz for numbers 1 through 30, one entry per line. For multiples
+			of 3 print "Fizz", for multiples of 5 print "Buzz", for multiples of both
+			print "FizzBuzz", otherwise print the number. Print only the output,
+			nothing else.
+		`),
 		judge: exactOutput(hereDoc(`
 			1
 			2
@@ -269,38 +275,48 @@ nothing else.`,
 	{
 		name: "is_prime_104729",
 		tier: 2,
-		prompt: `Determine whether 104729 is a prime number. Print "true" if it is prime,
-or "false" if it is not. Print only that single word, nothing else.`,
+		prompt: hereDoc(`
+			Determine whether 104729 is a prime number. Print "true" if it is prime,
+			or "false" if it is not. Print only that single word, nothing else.
+		`),
 		judge: exactOutput("true"),
 	},
 	{
 		name: "gcd_48_18",
 		tier: 2,
-		prompt: `Compute the greatest common divisor (GCD) of 48 and 18. Print only the
-number, nothing else.`,
+		prompt: hereDoc(`
+			Compute the greatest common divisor (GCD) of 48 and 18. Print only the
+			number, nothing else.
+		`),
 		judge: exactOutput("6"),
 	},
 	{
 		name: "count_vowels",
 		tier: 2,
-		prompt: `Count the number of vowels (a, e, i, o, u, case-insensitive) in the string
-"The quick brown fox jumps over the lazy dog". Print only the count,
-nothing else.`,
+		prompt: hereDoc(`
+			Count the number of vowels (a, e, i, o, u, case-insensitive) in the string
+			"The quick brown fox jumps over the lazy dog". Print only the count,
+			nothing else.
+		`),
 		judge: exactOutput("11"),
 	},
 	{
 		name: "decimal_to_binary",
 		tier: 2,
-		prompt: `Convert the decimal number 255 to its binary string representation with
-no prefix (no "0b"). Print only the binary string, nothing else.`,
+		prompt: hereDoc(`
+			Convert the decimal number 255 to its binary string representation with
+			no prefix (no "0b"). Print only the binary string, nothing else.
+		`),
 		judge: exactOutput("11111111"),
 	},
 	{
 		name: "pascals_triangle",
 		tier: 2,
-		prompt: `Print the first 10 rows of Pascal's triangle (rows 0 through 9). Print
-one row per line, with numbers separated by single spaces. Row 0 is "1",
-row 1 is "1 1", etc. Print only the triangle, nothing else.`,
+		prompt: hereDoc(`
+			Print the first 10 rows of Pascal's triangle (rows 0 through 9). Print
+			one row per line, with numbers separated by single spaces. Row 0 is "1",
+			row 1 is "1 1", etc. Print only the triangle, nothing else.
+		`),
 		judge: exactOutput(hereDoc(`
 			1
 			1 1
@@ -319,10 +335,12 @@ row 1 is "1 1", etc. Print only the triangle, nothing else.`,
 	{
 		name: "sieve_of_eratosthenes",
 		tier: 3,
-		prompt: `Use the Sieve of Eratosthenes to find all prime numbers below 10000.
-Print three lines: first line is the count of primes found, second line
-is the first 10 primes separated by spaces, third line is the last 10
-primes separated by spaces. Print only these three lines, nothing else.`,
+		prompt: hereDoc(`
+			Use the Sieve of Eratosthenes to find all prime numbers below 10000.
+			Print three lines: first line is the count of primes found, second line
+			is the first 10 primes separated by spaces, third line is the last 10
+			primes separated by spaces. Print only these three lines, nothing else.
+		`),
 		judge: exactOutput(hereDoc(`
 			1229
 			2 3 5 7 11 13 17 19 23 29
@@ -332,9 +350,11 @@ primes separated by spaces. Print only these three lines, nothing else.`,
 	{
 		name: "fibonacci_30",
 		tier: 3,
-		prompt: `Print the first 30 Fibonacci numbers F(0) through F(29), one per line.
-F(0)=0, F(1)=1, F(n)=F(n-1)+F(n-2). Print only the numbers, one per
-line, nothing else.`,
+		prompt: hereDoc(`
+			Print the first 30 Fibonacci numbers F(0) through F(29), one per line.
+			F(0)=0, F(1)=1, F(n)=F(n-1)+F(n-2). Print only the numbers, one per
+			line, nothing else.
+		`),
 		judge: exactOutput(hereDoc(`
 			0
 			1
@@ -371,10 +391,12 @@ line, nothing else.`,
 	{
 		name: "balanced_parentheses",
 		tier: 3,
-		prompt: `Check whether each of the following strings has balanced parentheses.
-For each string, print "true" if balanced or "false" if not, one result
-per line in order. The strings are: "(()())", "(()", "()()", ")(", "",
-"((()))", "(()))". Print only "true" or "false" on each line, nothing else.`,
+		prompt: hereDoc(`
+			Check whether each of the following strings has balanced parentheses.
+			For each string, print "true" if balanced or "false" if not, one result
+			per line in order. The strings are: "(()())", "(()", "()()", ")(", "",
+			"((()))", "(()))". Print only "true" or "false" on each line, nothing else.
+		`),
 		judge: exactOutput(hereDoc(`
 			true
 			false
@@ -388,16 +410,20 @@ per line in order. The strings are: "(()())", "(()", "()()", ")(", "",
 	{
 		name: "longest_common_subsequence",
 		tier: 3,
-		prompt: `Find the length of the longest common subsequence of "ABCBDAB" and
-"BDCAB". Print only the number, nothing else.`,
+		prompt: hereDoc(`
+			Find the length of the longest common subsequence of "ABCBDAB" and
+			"BDCAB". Print only the number, nothing else.
+		`),
 		judge: exactOutput("4"),
 	},
 	{
 		name: "roman_numerals",
 		tier: 3,
-		prompt: `Convert each of the following integers to Roman numerals and print each
-on its own line: 1, 4, 9, 14, 42, 99, 1994, 3999. Print only the Roman
-numeral strings, one per line, nothing else.`,
+		prompt: hereDoc(`
+			Convert each of the following integers to Roman numerals and print each
+			on its own line: 1, 4, 9, 14, 42, 99, 1994, 3999. Print only the Roman
+			numeral strings, one per line, nothing else.
+		`),
 		judge: exactOutput(hereDoc(`
 			I
 			IV
@@ -412,10 +438,12 @@ numeral strings, one per line, nothing else.`,
 	{
 		name: "run_length_encoding",
 		tier: 3,
-		prompt: `Run-length encode the string "aaabbbccccdddddeee". Output format: each
-character followed immediately by its count, concatenated together. For
-example, "aabbc" becomes "a2b2c1". Print only the encoded string,
-nothing else.`,
+		prompt: hereDoc(`
+			Run-length encode the string "aaabbbccccdddddeee". Output format: each
+			character followed immediately by its count, concatenated together. For
+			example, "aabbc" becomes "a2b2c1". Print only the encoded string,
+			nothing else.
+		`),
 		judge: exactOutput("a3b3c4d5e3"),
 	},
 
@@ -423,44 +451,54 @@ nothing else.`,
 	{
 		name: "max_subarray_sum",
 		tier: 4,
-		prompt: `Find the maximum contiguous subarray sum (Kadane's algorithm) of the
-array [-2, 1, -3, 4, -1, 2, 1, -5, 4]. Print only the number,
-nothing else.`,
+		prompt: hereDoc(`
+			Find the maximum contiguous subarray sum (Kadane's algorithm) of the
+			array [-2, 1, -3, 4, -1, 2, 1, -5, 4]. Print only the number,
+			nothing else.
+		`),
 		judge: exactOutput("6"),
 	},
 	{
 		name: "count_islands",
 		tier: 4,
-		prompt: `Count the number of islands in a 2D grid. An island is a group of 1s
-connected horizontally or vertically. The grid (4 rows, 5 columns) is:
-Row 0: 1 1 0 0 0
-Row 1: 1 1 0 0 0
-Row 2: 0 0 1 0 0
-Row 3: 0 0 0 1 1
-Print only the count of islands, nothing else.`,
+		prompt: hereDoc(`
+			Count the number of islands in a 2D grid. An island is a group of 1s
+			connected horizontally or vertically. The grid (4 rows, 5 columns) is:
+			Row 0: 1 1 0 0 0
+			Row 1: 1 1 0 0 0
+			Row 2: 0 0 1 0 0
+			Row 3: 0 0 0 1 1
+			Print only the count of islands, nothing else.
+		`),
 		judge: exactOutput("3"),
 	},
 	{
 		name: "levenshtein_distance",
 		tier: 4,
-		prompt: `Compute the Levenshtein (edit) distance between "kitten" and "sitting".
-Print only the number, nothing else.`,
+		prompt: hereDoc(`
+			Compute the Levenshtein (edit) distance between "kitten" and "sitting".
+			Print only the number, nothing else.
+		`),
 		judge: exactOutput("3"),
 	},
 	{
 		name: "minimum_coins",
 		tier: 4,
-		prompt: `Find the minimum number of coins from denominations [1, 5, 10, 25]
-needed to make exactly 63 cents. Print only the number, nothing else.`,
+		prompt: hereDoc(`
+			Find the minimum number of coins from denominations [1, 5, 10, 25]
+			needed to make exactly 63 cents. Print only the number, nothing else.
+		`),
 		judge: exactOutput("6"),
 	},
 	{
 		name: "topological_sort",
 		tier: 4,
-		prompt: `Perform a topological sort on a directed acyclic graph with these edges:
-A→B, A→C, B→D, C→D, D→E. Print the vertices in a valid topological
-order, separated by spaces, on a single line. Print only the vertex
-names separated by spaces, nothing else.`,
+		prompt: hereDoc(`
+			Perform a topological sort on a directed acyclic graph with these edges:
+			A→B, A→C, B→D, C→D, D→E. Print the vertices in a valid topological
+			order, separated by spaces, on a single line. Print only the vertex
+			names separated by spaces, nothing else.
+		`),
 		judge: validTopologicalSort([][2]string{
 			{"A", "B"}, {"A", "C"}, {"B", "D"}, {"C", "D"}, {"D", "E"},
 		}),
@@ -468,11 +506,13 @@ names separated by spaces, nothing else.`,
 	{
 		name: "matrix_multiply",
 		tier: 4,
-		prompt: `Multiply these two matrices and print the result.
-Matrix A (2x3): [[1, 2, 3], [4, 5, 6]]
-Matrix B (3x2): [[7, 8], [9, 10], [11, 12]]
-Print the resulting 2x2 matrix, one row per line, with numbers separated
-by spaces. Print only the matrix, nothing else.`,
+		prompt: hereDoc(`
+			Multiply these two matrices and print the result.
+			Matrix A (2x3): [[1, 2, 3], [4, 5, 6]]
+			Matrix B (3x2): [[7, 8], [9, 10], [11, 12]]
+			Print the resulting 2x2 matrix, one row per line, with numbers separated
+			by spaces. Print only the matrix, nothing else.
+		`),
 		judge: exactOutput(hereDoc(`
 			58 64
 			139 154
@@ -481,10 +521,12 @@ by spaces. Print only the matrix, nothing else.`,
 	{
 		name: "spiral_matrix",
 		tier: 4,
-		prompt: `Generate a 5x5 spiral matrix filled with numbers 1 to 25 in clockwise
-spiral order starting from the top-left. Print the matrix with one row
-per line, numbers separated by spaces. Print only the matrix,
-nothing else.`,
+		prompt: hereDoc(`
+			Generate a 5x5 spiral matrix filled with numbers 1 to 25 in clockwise
+			spiral order starting from the top-left. Print the matrix with one row
+			per line, numbers separated by spaces. Print only the matrix,
+			nothing else.
+		`),
 		judge: exactOutput(hereDoc(`
 			1 2 3 4 5
 			16 17 18 19 6
@@ -496,34 +538,40 @@ nothing else.`,
 	{
 		name: "knapsack_01",
 		tier: 4,
-		prompt: `Solve the 0/1 knapsack problem. Capacity: 50. Items (weight, value):
-(10, 60), (20, 100), (30, 120). Print the maximum total value
-achievable. Print only the number, nothing else.`,
+		prompt: hereDoc(`
+			Solve the 0/1 knapsack problem. Capacity: 50. Items (weight, value):
+			(10, 60), (20, 100), (30, 120). Print the maximum total value
+			achievable. Print only the number, nothing else.
+		`),
 		judge: exactOutput("220"),
 	},
 	{
 		name: "longest_palindrome_substring",
 		tier: 4,
-		prompt: `Find the longest palindromic substring of "babad". If there are multiple
-of the same length, print the one that appears first. Print only the
-substring, nothing else.`,
+		prompt: hereDoc(`
+			Find the longest palindromic substring of "babad". If there are multiple
+			of the same length, print the one that appears first. Print only the
+			substring, nothing else.
+		`),
 		judge: oneOf("bab", "aba"),
 	},
 	{
 		name: "sudoku_solver",
 		tier: 4,
-		prompt: `Solve this Sudoku puzzle. The grid uses 0 for empty cells:
-5 3 0 0 7 0 0 0 0
-6 0 0 1 9 5 0 0 0
-0 9 8 0 0 0 0 6 0
-8 0 0 0 6 0 0 0 3
-4 0 0 8 0 3 0 0 1
-7 0 0 0 2 0 0 0 6
-0 6 0 0 0 0 2 8 0
-0 0 0 4 1 9 0 0 5
-0 0 0 0 8 0 0 7 9
-Print the completed 9x9 grid with numbers separated by spaces, one row
-per line. Print only the grid, nothing else.`,
+		prompt: hereDoc(`
+			Solve this Sudoku puzzle. The grid uses 0 for empty cells:
+			5 3 0 0 7 0 0 0 0
+			6 0 0 1 9 5 0 0 0
+			0 9 8 0 0 0 0 6 0
+			8 0 0 0 6 0 0 0 3
+			4 0 0 8 0 3 0 0 1
+			7 0 0 0 2 0 0 0 6
+			0 6 0 0 0 0 2 8 0
+			0 0 0 4 1 9 0 0 5
+			0 0 0 0 8 0 0 7 9
+			Print the completed 9x9 grid with numbers separated by spaces, one row
+			per line. Print only the grid, nothing else.
+		`),
 		judge: exactOutput(hereDoc(`
 			5 3 4 6 7 8 9 1 2
 			6 7 2 1 9 5 3 4 8
@@ -541,11 +589,13 @@ per line. Print only the grid, nothing else.`,
 	{
 		name: "game_of_life",
 		tier: 5,
-		prompt: `Simulate 10 steps of Conway's Game of Life on an 8x8 grid. The initial
-state has live cells (1) at positions (row, col, 0-indexed): (1,2),
-(2,3), (3,1), (3,2), (3,3). All other cells are dead (0). Print the
-final 8x8 grid after 10 steps, one row per line, with cells separated
-by spaces. Print only the grid, nothing else.`,
+		prompt: hereDoc(`
+			Simulate 10 steps of Conway's Game of Life on an 8x8 grid. The initial
+			state has live cells (1) at positions (row, col, 0-indexed): (1,2),
+			(2,3), (3,1), (3,2), (3,3). All other cells are dead (0). Print the
+			final 8x8 grid after 10 steps, one row per line, with cells separated
+			by spaces. Print only the grid, nothing else.
+		`),
 		judge: exactOutput(hereDoc(`
 			0 0 0 0 0 0 0 0
 			0 0 0 0 0 0 0 0
@@ -560,36 +610,44 @@ by spaces. Print only the grid, nothing else.`,
 	{
 		name: "n_queens",
 		tier: 5,
-		prompt: `Solve the 8-queens problem: place 8 queens on an 8x8 chessboard so that
-no two queens attack each other. Print the board as 8 lines of 8
-characters each, using "Q" for a queen and "." for empty. Separate
-characters with spaces. Print only the board, nothing else.`,
+		prompt: hereDoc(`
+			Solve the 8-queens problem: place 8 queens on an 8x8 chessboard so that
+			no two queens attack each other. Print the board as 8 lines of 8
+			characters each, using "Q" for a queen and "." for empty. Separate
+			characters with spaces. Print only the board, nothing else.
+		`),
 		judge: validNQueens(8),
 	},
 	{
 		name: "bigint_factorial_50",
 		tier: 5,
-		prompt: `Compute 50! (50 factorial). Starlark supports arbitrary-precision
-integers. Print only the number, nothing else.`,
+		prompt: hereDoc(`
+			Compute 50! (50 factorial). Starlark supports arbitrary-precision
+			integers. Print only the number, nothing else.
+		`),
 		judge: exactOutput("30414093201713378043612608166064768844377641568960512000000000000"),
 	},
 	{
 		name: "postfix_eval",
 		tier: 5,
-		prompt: `Evaluate the postfix (reverse Polish notation) expression:
-"3 4 + 2 * 7 /"
-Operators are +, -, *, / (integer division). Print only the result as
-an integer, nothing else.`,
+		prompt: hereDoc(`
+			Evaluate the postfix (reverse Polish notation) expression:
+			"3 4 + 2 * 7 /"
+			Operators are +, -, *, / (integer division). Print only the result as
+			an integer, nothing else.
+		`),
 		judge: exactOutput("2"),
 	},
 	{
 		name: "text_histogram",
 		tier: 5,
-		prompt: `Count the frequency of each word (case-insensitive) in the text:
-"the cat sat on the mat the cat sat"
-Print each word and its count in the format "word count", one per line,
-sorted by count descending then alphabetically. Print only the
-word-count lines, nothing else.`,
+		prompt: hereDoc(`
+			Count the frequency of each word (case-insensitive) in the text:
+			"the cat sat on the mat the cat sat"
+			Print each word and its count in the format "word count", one per line,
+			sorted by count descending then alphabetically. Print only the
+			word-count lines, nothing else.
+		`),
 		judge: exactOutput(hereDoc(`
 			the 3
 			cat 2
