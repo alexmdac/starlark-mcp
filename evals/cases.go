@@ -356,7 +356,7 @@ state has live cells (1) at positions (row, col, 0-indexed): (1,2),
 (2,3), (3,1), (3,2), (3,3). All other cells are dead (0). Print the
 final 8x8 grid after 10 steps, one row per line, with cells separated
 by spaces. Print only the grid, nothing else.`,
-		judge: exactOutput("0 0 0 0 0 0 0 0\n0 0 0 0 0 0 0 0\n0 0 0 0 1 0 0 0\n0 0 0 0 0 1 0 0\n0 0 0 1 1 1 0 0\n0 0 0 0 0 0 0 0\n0 0 0 0 0 0 0 0\n0 0 0 0 0 0 0 0"),
+		judge: exactOutput("0 0 0 0 0 0 0 0\n0 0 0 0 0 0 0 0\n0 0 0 0 0 0 0 0\n0 0 0 0 0 0 0 0\n0 0 0 0 0 1 0 0\n0 0 0 1 0 1 0 0\n0 0 0 0 1 1 0 0\n0 0 0 0 0 0 0 0"),
 	},
 	{
 		name: "n_queens",
