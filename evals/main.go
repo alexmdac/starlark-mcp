@@ -39,7 +39,10 @@ type caseResults struct {
 	Runs []evalResult
 }
 
-const defaultAnthropicURL = "http://169.254.169.254/gateway/llm/anthropic"
+const (
+	defaultAnthropicURL = "http://169.254.169.254/gateway/llm/anthropic"
+	defaultOpenAIURL    = "http://169.254.169.254/gateway/llm/openai"
+)
 
 func main() {
 	runsFlag := flag.Int("runs", 5, "number of independent runs per eval case")
@@ -72,7 +75,7 @@ func main() {
 		client = llm.NewAnthropic(apiKey, model, baseURL)
 	case "openai":
 		if baseURL == "" {
-			baseURL = "https://api.openai.com"
+			baseURL = defaultOpenAIURL
 		}
 		apiKey := os.Getenv("OPENAI_API_KEY")
 		if apiKey == "" {
