@@ -28,8 +28,7 @@ type evalResult struct {
 func main() {
 	apiKey := os.Getenv("ANTHROPIC_API_KEY")
 	if apiKey == "" {
-		fmt.Fprintln(os.Stderr, "ANTHROPIC_API_KEY is required")
-		os.Exit(1)
+		apiKey = "unspecified"
 	}
 
 	model := os.Getenv("EVAL_MODEL")
