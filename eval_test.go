@@ -40,23 +40,25 @@ func TestEval(t *testing.T) {
 
 	results := make([]evalResult, len(evalCases))
 
-	for i, ec := range evalCases {
-		ec := ec
-		i := i
-		t.Run(ec.Name, func(t *testing.T) {
-			t.Parallel()
-			result := runEval(t, client, ec)
-			results[i] = result
-			if !result.Passed {
-				t.Errorf("eval case %q failed after %d attempts", ec.Name, result.Attempts)
-				for j, out := range result.Outputs {
-					t.Logf("  attempt %d output: %q", j+1, out)
+	t.Run("cases", func(t *testing.T) {
+		for i, ec := range evalCases {
+			ec := ec
+			i := i
+			t.Run(ec.Name, func(t *testing.T) {
+				t.Parallel()
+				result := runEval(t, client, ec)
+				results[i] = result
+				if !result.Passed {
+					t.Errorf("eval case %q failed after %d attempts", ec.Name, result.Attempts)
+					for j, out := range result.Outputs {
+						t.Logf("  attempt %d output: %q", j+1, out)
+					}
 				}
-			}
-		})
-	}
+			})
+		}
+	})
 
-	// Print summary table.
+	// Print summary table (all subtests have completed).
 	printSummary(t, model, results)
 }
 
