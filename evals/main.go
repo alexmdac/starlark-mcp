@@ -19,14 +19,16 @@ import (
 )
 
 type evalResult struct {
-	Case      Case
-	Passed    bool
-	Attempts  int
-	Score     float64
-	Outputs   []string // starlark output from each attempt
-	TokensIn  int
-	TokensOut int
-	Duration  time.Duration
+	Case        Case
+	Passed      bool
+	Attempts    int
+	Score       float64
+	Outputs     []string // starlark output from each attempt
+	TokensIn    int
+	TokensOut   int
+	Duration    time.Duration
+	LLMTime     time.Duration
+	StarlarkTime time.Duration
 }
 
 func main() {
@@ -285,7 +287,9 @@ func runEval(llm *Client, session *mcp.ClientSession, toolDefs []ToolDef, ec Cas
 			Tools:     toolDefs,
 		}
 
+		llmStart := time.Now()
 		resp, err := llm.SendRequest(context.Background(), req)
+		result.LLMTime += time.Since(llmStart)
 		if err != nil {
 			break
 		}
@@ -309,9 +313,11 @@ func runEval(llm *Client, session *mcp.ClientSession, toolDefs []ToolDef, ec Cas
 		}
 
 		// Call the tool via MCP.
+		toolStart := time.Now()
 		output, toolIsError, callErr := callMCPTool(
 			context.Background(), session, toolUse.Name, toolUse.Input,
 		)
+		result.StarlarkTime += time.Since(toolStart)
 
 		result.Attempts++
 
@@ -370,9 +376,9 @@ func printSummary(model string, results []evalResult) {
 		4: "HARD",
 	}
 
-	fmt.Printf("\n%s%s%s\n", colorCyan, strings.Repeat("═", 72), colorReset)
+	fmt.Printf("\n%s%s%s\n", colorCyan, strings.Repeat("═", 92), colorReset)
 	fmt.Printf("%s%sEVAL RESULTS — model: %s%s\n", colorBold, colorCyan, model, colorReset)
-	fmt.Printf("%s%s%s\n", colorCyan, strings.Repeat("═", 72), colorReset)
+	fmt.Printf("%s%s%s\n", colorCyan, strings.Repeat("═", 92), colorReset)
 
 	totalPassed := 0
 	totalCases := 0
@@ -415,8 +421,8 @@ func printSummary(model string, results []evalResult) {
 			if padding < 1 {
 				padding = 1
 			}
-			fmt.Printf("  %s%s%s %s%s%sattempts: %d  score: %.2f  %.1fs%s\n",
-				color, mark, colorReset, name, strings.Repeat(" ", padding), colorDim, r.Attempts, r.Score, r.Duration.Seconds(), colorReset)
+			fmt.Printf("  %s%s%s %s%s%sattempts: %d  score: %.2f  llm: %.1fs  starlark: %.1fs%s\n",
+				color, mark, colorReset, name, strings.Repeat(" ", padding), colorDim, r.Attempts, r.Score, r.LLMTime.Seconds(), r.StarlarkTime.Seconds(), colorReset)
 			tierScore += r.Score
 			totalTokensIn += r.TokensIn
 			totalTokensOut += r.TokensOut
@@ -430,8 +436,8 @@ func printSummary(model string, results []evalResult) {
 		totalScore += tierScore
 	}
 
-	fmt.Printf("\n%s%s%s\n", colorCyan, strings.Repeat("─", 72), colorReset)
+	fmt.Printf("\n%s%s%s\n", colorCyan, strings.Repeat("─", 92), colorReset)
 	fmt.Printf("%s%sOVERALL: %.2f (%d/%d passed)  tokens: %d in, %d out%s\n",
 		colorBold, colorCyan, totalScore/float64(totalCases), totalPassed, totalCases, totalTokensIn, totalTokensOut, colorReset)
-	fmt.Printf("%s%s%s\n", colorCyan, strings.Repeat("─", 72), colorReset)
+	fmt.Printf("%s%s%s\n", colorCyan, strings.Repeat("─", 92), colorReset)
 }
