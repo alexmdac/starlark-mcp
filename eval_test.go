@@ -25,9 +25,6 @@ type evalResult struct {
 
 func TestEval(t *testing.T) {
 	apiKey := os.Getenv("ANTHROPIC_API_KEY")
-	if apiKey == "" {
-		t.Skip("ANTHROPIC_API_KEY not set, skipping eval")
-	}
 
 	model := os.Getenv("EVAL_MODEL")
 	if model == "" {
@@ -47,6 +44,7 @@ func TestEval(t *testing.T) {
 		ec := ec
 		i := i
 		t.Run(ec.Name, func(t *testing.T) {
+			t.Parallel()
 			result := runEval(t, client, ec)
 			results[i] = result
 			if !result.Passed {
@@ -70,7 +68,7 @@ func runEval(t *testing.T, client *llmClient, ec evalCase) evalResult {
 
 	systemPrompt := "You are solving a programming task using the execute-starlark tool. " +
 		"Use the tool to write and run a Starlark program that produces the requested output. " +
-		"Do not explain your work \u2014 just call the tool." +
+		"Do not explain your work — just call the tool." +
 		"\n\nThe following documentation describes the built-in functions available:\n\n" +
 		builtinsDocumentation
 
@@ -200,9 +198,9 @@ func printSummary(t *testing.T, model string, results []evalResult) {
 
 	var sb strings.Builder
 
-	sb.WriteString("\n\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\n")
-	sb.WriteString(fmt.Sprintf("EVAL RESULTS \u2014 model: %s\n", model))
-	sb.WriteString("\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\n")
+	sb.WriteString("\n" + strings.Repeat("═", 62) + "\n")
+	sb.WriteString(fmt.Sprintf("EVAL RESULTS — model: %s\n", model))
+	sb.WriteString(strings.Repeat("═", 62) + "\n")
 
 	tierNames := map[int]string{
 		1: "BASICS",
@@ -236,9 +234,9 @@ func printSummary(t *testing.T, model string, results []evalResult) {
 		tierScore := 0.0
 
 		for _, r := range tierResults {
-			mark := "\u2717"
+			mark := "✗"
 			if r.Passed {
-				mark = "\u2713"
+				mark = "✓"
 				tierPassed++
 			}
 			// Pad name to 35 chars for alignment.
@@ -262,10 +260,10 @@ func printSummary(t *testing.T, model string, results []evalResult) {
 		totalScore += tierScore
 	}
 
-	sb.WriteString("\n\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\n")
+	sb.WriteString("\n" + strings.Repeat("─", 62) + "\n")
 	sb.WriteString(fmt.Sprintf("OVERALL: %.2f (%d/%d passed)  tokens: %d in, %d out\n",
 		totalScore/float64(totalCases), totalPassed, totalCases, totalTokensIn, totalTokensOut))
-	sb.WriteString("\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\n")
+	sb.WriteString(strings.Repeat("─", 62) + "\n")
 
 	t.Logf("%s", sb.String())
 }
