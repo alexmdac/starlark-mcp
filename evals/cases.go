@@ -548,6 +548,47 @@ var cases = []evalCase{
 		`)),
 	},
 
+	{
+		name: "longest_increasing_subsequence",
+		tier: 4,
+		prompt: dedent(`
+			Find the length of the longest strictly increasing subsequence of
+			the array [3, 10, 2, 1, 20, 4, 6, 7, 5, 30]. Print only the
+			number, nothing else.
+		`),
+		judge: exactOutput("5"),
+	},
+	{
+		name: "count_inversions",
+		tier: 4,
+		prompt: dedent(`
+			Count the number of inversions in the array [8, 4, 2, 1, 3, 5, 7, 6].
+			An inversion is a pair of indices (i, j) where i < j but a[i] > a[j].
+			Print only the count, nothing else.
+		`),
+		judge: exactOutput("12"),
+	},
+	{
+		name: "grid_paths_with_obstacles",
+		tier: 4,
+		prompt: dedent(`
+			Count the number of unique paths from the top-left corner to the
+			bottom-right corner of a 7x7 grid. You may only move right or down.
+			Some cells are blocked (1 = blocked, 0 = open):
+
+			0 0 0 0 0 0 0
+			0 0 1 0 0 0 0
+			0 0 0 0 1 0 0
+			0 1 0 0 0 0 0
+			0 0 0 1 0 0 0
+			0 0 0 0 0 1 0
+			0 0 0 0 0 0 0
+
+			Print only the count of paths, nothing else.
+		`),
+		judge: exactOutput("62"),
+	},
+
 	// ── Tier 5: Expert ──
 	{
 		name: "game_of_life",
@@ -618,6 +659,59 @@ var cases = []evalCase{
 			mat 1
 			on 1
 		`)),
+	},
+
+	{
+		name: "longest_palindromic_subsequence",
+		tier: 5,
+		prompt: dedent(`
+			Find the length of the longest palindromic subsequence of the
+			string "BBABCBCAB". A subsequence need not be contiguous. Print
+			only the number, nothing else.
+		`),
+		judge: exactOutput("7"),
+	},
+	{
+		name: "kth_permutation",
+		tier: 5,
+		prompt: dedent(`
+			Find the 1000th permutation (1-indexed) of the elements
+			[1, 2, 3, 4, 5, 6, 7] in lexicographic order. Print the
+			permutation as space-separated numbers on a single line.
+			Print only the permutation, nothing else.
+		`),
+		judge: exactOutput("2 4 3 6 5 7 1"),
+	},
+	{
+		name: "matrix_chain_multiplication",
+		tier: 5,
+		prompt: dedent(`
+			Find the minimum number of scalar multiplications needed to
+			compute the product of four matrices with dimensions given by
+			the array [40, 20, 30, 10, 30]. That is, the matrices are
+			40x20, 20x30, 30x10, and 10x30. Print only the number,
+			nothing else.
+		`),
+		judge: exactOutput("26000"),
+	},
+
+	{
+		name: "matrix_permanent",
+		tier: 5,
+		prompt: dedent(`
+			Compute the permanent of this 5x5 matrix. The permanent is
+			like the determinant but with all additions (no sign changes):
+			perm(A) = sum over all permutations σ of ∏ A[i][σ(i)].
+
+			[[1, 2, 3, 4, 5],
+			 [5, 4, 3, 2, 1],
+			 [2, 3, 1, 5, 4],
+			 [4, 1, 5, 3, 2],
+			 [3, 5, 4, 1, 3]]
+
+			Print only the number, nothing else.
+		`),
+		judge: exactOutput("35536"),
 	},
 
 	// ── Tier 6: Challenging ──
@@ -753,5 +847,38 @@ var cases = []evalCase{
 			Print only the value on top of the stack after execution, nothing else.
 		`),
 		judge: exactOutput("110"),
+	},
+	{
+		name: "huffman_total_bits",
+		tier: 6,
+		prompt: dedent(`
+			Build a Huffman tree for characters with these frequencies:
+			a:5, b:9, c:12, d:13, e:16, f:45
+
+			When selecting two minimum-frequency nodes to merge, if there
+			is a tie, any choice is valid.
+
+			Compute the total number of encoded bits, i.e., the sum of
+			(frequency × code length) over all characters. Print only
+			the number, nothing else.
+		`),
+		judge: exactOutput("224"),
+	},
+	{
+		name: "strongly_connected_components",
+		tier: 6,
+		prompt: dedent(`
+			Find all strongly connected components in this directed graph
+			with vertices 0-7 and edges:
+			0→1, 1→2, 2→0, 2→3, 3→4, 4→5, 5→3, 5→6, 6→7, 7→6
+
+			Print two lines. First line: the number of SCCs. Second line:
+			the sizes of the SCCs in ascending order, separated by spaces.
+			Print only these two lines, nothing else.
+		`),
+		judge: exactOutput(dedent(`
+			3
+			2 3 3
+		`)),
 	},
 }
