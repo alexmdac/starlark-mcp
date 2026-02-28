@@ -136,7 +136,7 @@ func newDisplay(cases []Case) *display {
 }
 
 func (d *display) loop() {
-	ticker := time.NewTicker(100 * time.Millisecond)
+	ticker := time.NewTicker(time.Second)
 	defer ticker.Stop()
 	for {
 		select {
@@ -198,7 +198,7 @@ func (d *display) render() {
 					colorRed, c.Name, colorReset, colorDim, d.durations[i].Round(time.Millisecond), d.attempts[i], colorReset)
 			}
 		} else {
-			elapsed := now.Sub(d.startTimes[i]).Round(time.Millisecond)
+			elapsed := now.Sub(d.startTimes[i]).Round(time.Second)
 			fmt.Fprintf(os.Stderr, "  %s%s %s%s %s(%s)%s\n",
 				colorYellow, spinnerFrames[frame], c.Name, colorReset, colorDim, elapsed, colorReset)
 		}
