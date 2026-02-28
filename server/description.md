@@ -16,18 +16,6 @@ Starlark is a Python-like language with important restrictions and syntax differ
 * Operator chaining requires parentheses: `(a <= b) and (b < c)` not `a <= b < c`
 * Deterministic execution only
 
-## Example
-
-```
-def main():
-  result = []
-  for i in range(10):
-    result.append(str(i))
-  for item in result:
-    print(item)
-
-main()
-```
 
 ## Available Features
 
