@@ -27,7 +27,7 @@ func TestBuiltins(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			result, err := ExecuteStarlark(context.Background(), tc.code)
+			result, err := executeStarlark(context.Background(), tc.code)
 
 			if tc.expectedErr != "" {
 				if err == nil {

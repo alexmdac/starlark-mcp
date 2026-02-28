@@ -77,7 +77,7 @@ func expectTextContent(t *testing.T, res *mcp.CallToolResult) string {
 func TestExecuteStarlark(t *testing.T) {
 	client := startTestServer(t)
 	params := &mcp.CallToolParams{
-		Name: ExecuteStarlarkName,
+		Name: executeStarlarkName,
 		Arguments: executeStarlarkParams{
 			Program:     `print("Hello, world!")`,
 			TimeoutSecs: 30,
@@ -97,7 +97,7 @@ def main():
   for i in range(10000000): pass
 main()`
 	params := &mcp.CallToolParams{
-		Name: ExecuteStarlarkName,
+		Name: executeStarlarkName,
 		Arguments: executeStarlarkParams{
 			Program:     program,
 			TimeoutSecs: 0.1, // A very short timeout
@@ -114,7 +114,7 @@ main()`
 func TestExecuteStarlark_InvalidTimeout(t *testing.T) {
 	client := startTestServer(t)
 	params := &mcp.CallToolParams{
-		Name: ExecuteStarlarkName,
+		Name: executeStarlarkName,
 		Arguments: executeStarlarkParams{
 			Program:     "print(1)",
 			TimeoutSecs: -1.0, // Invalid timeout
@@ -142,7 +142,7 @@ def main():
 main()
 `
 	params := &mcp.CallToolParams{
-		Name: ExecuteStarlarkName,
+		Name: executeStarlarkName,
 		Arguments: executeStarlarkParams{
 			Program:     program,
 			TimeoutSecs: 60.0,
@@ -167,7 +167,7 @@ func TestBuiltinsResource(t *testing.T) {
 		{
 			name:         "success",
 			uri:          "starlark://builtins",
-			expectedText: BuiltinsDocumentation,
+			expectedText: builtinsDocumentation,
 		},
 		{
 			name:          "not_found",

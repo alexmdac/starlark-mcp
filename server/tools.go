@@ -14,16 +14,16 @@ import (
 
 const (
 	maxOutputLen        = 16 * 1024
-	ExecuteStarlarkName = "execute-starlark"
+	executeStarlarkName = "execute-starlark"
 )
 
 //go:embed execute_starlark_description.md
-var ExecuteStarlarkDescription string
+var executeStarlarkDescription string
 
 func addExecuteStarlarkTool(server *mcp.Server) {
 	tool := &mcp.Tool{
-		Name:        ExecuteStarlarkName,
-		Description: ExecuteStarlarkDescription,
+		Name:        executeStarlarkName,
+		Description: executeStarlarkDescription,
 	}
 	mcp.AddTool(server, tool, handleExecuteStarlarkTool)
 }
@@ -56,7 +56,7 @@ func handleExecuteStarlarkTool(
 	ctx, done := context.WithTimeout(ctx, args.timeout())
 	defer done()
 
-	output, err := ExecuteStarlark(ctx, args.Program)
+	output, err := executeStarlark(ctx, args.Program)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -67,9 +67,9 @@ func handleExecuteStarlarkTool(
 	}, nil, nil
 }
 
-// ExecuteStarlark executes the given Starlark program and returns its output.
+// executeStarlark executes the given Starlark program and returns its output.
 // The program generates output using the "print" builtin function.
-func ExecuteStarlark(ctx context.Context, program string) (string, error) {
+func executeStarlark(ctx context.Context, program string) (string, error) {
 	buf := newOutputBuffer(maxOutputLen)
 	thread := &starlark.Thread{
 		Print: buf.appendln,
