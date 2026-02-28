@@ -191,16 +191,16 @@ func (d *display) render() {
 		fmt.Fprintf(os.Stderr, "\033[2K")
 		if d.done[i] {
 			if d.passed[i] {
-				fmt.Fprintf(os.Stderr, "  %s✔ %s%s %s(%.1fs, %d attempts)%s\n",
-					colorGreen, c.Name, colorReset, colorDim, d.durations[i].Seconds(), d.attempts[i], colorReset)
+				fmt.Fprintf(os.Stderr, "  %s✔ %s%s %s(%s, %d attempts)%s\n",
+					colorGreen, c.Name, colorReset, colorDim, d.durations[i].Round(time.Millisecond), d.attempts[i], colorReset)
 			} else {
-				fmt.Fprintf(os.Stderr, "  %s✘ %s%s %s(%.1fs, %d attempts)%s\n",
-					colorRed, c.Name, colorReset, colorDim, d.durations[i].Seconds(), d.attempts[i], colorReset)
+				fmt.Fprintf(os.Stderr, "  %s✘ %s%s %s(%s, %d attempts)%s\n",
+					colorRed, c.Name, colorReset, colorDim, d.durations[i].Round(time.Millisecond), d.attempts[i], colorReset)
 			}
 		} else {
-			elapsed := now.Sub(d.startTimes[i])
-			fmt.Fprintf(os.Stderr, "  %s%s %s%s %s(%.1fs)%s\n",
-				colorYellow, spinnerFrames[frame], c.Name, colorReset, colorDim, elapsed.Seconds(), colorReset)
+			elapsed := now.Sub(d.startTimes[i]).Round(time.Millisecond)
+			fmt.Fprintf(os.Stderr, "  %s%s %s%s %s(%s)%s\n",
+				colorYellow, spinnerFrames[frame], c.Name, colorReset, colorDim, elapsed, colorReset)
 		}
 	}
 }
@@ -385,9 +385,9 @@ func printSummary(model string, results []evalResult) {
 	}
 
 	//  " ✔ %-Ns  %5s  %5s  %7s  %8s"
-	tableWidth := 3 + nameWidth + 2 + 5 + 2 + 5 + 2 + 7 + 2 + 8
-	headerFmt := fmt.Sprintf("%%s   %%-%ds  %%5s  %%5s  %%7s  %%8s%%s\n", nameWidth)
-	rowFmt := fmt.Sprintf(" %%s%%s%%s %%-%ds  %%s%%5d  %%5.2f  %%6.1fs  %%7.1fs%%s\n", nameWidth)
+	tableWidth := 3 + nameWidth + 2 + 5 + 2 + 5 + 2 + 10 + 2 + 10
+	headerFmt := fmt.Sprintf("%%s   %%-%ds  %%5s  %%5s  %%10s  %%10s%%s\n", nameWidth)
+	rowFmt := fmt.Sprintf(" %%s%%s%%s %%-%ds  %%s%%5d  %%5.2f  %%10s  %%10s%%s\n", nameWidth)
 
 	fmt.Printf("\n%s%s%s\n", colorCyan, strings.Repeat("═", tableWidth), colorReset)
 	fmt.Printf("%s%sEVAL RESULTS — model: %s%s\n", colorBold, colorCyan, model, colorReset)
@@ -431,7 +431,7 @@ func printSummary(model string, results []evalResult) {
 				color = colorRed
 			}
 			fmt.Printf(rowFmt,
-				color, mark, colorReset, r.Case.Name, colorDim, r.Attempts, r.Score, r.LLMTime.Seconds(), r.StarlarkTime.Seconds(), colorReset)
+				color, mark, colorReset, r.Case.Name, colorDim, r.Attempts, r.Score, r.LLMTime.Round(time.Millisecond), r.StarlarkTime.Round(time.Millisecond), colorReset)
 			tierScore += r.Score
 			totalTokensIn += r.TokensIn
 			totalTokensOut += r.TokensOut
