@@ -190,6 +190,7 @@ func toOpenAIMessages(m Message) []openAIMessage {
 		}
 		out = append(out, openAIMessage{
 			Role:      "assistant",
+			Content:   m.Text,
 			ToolCalls: tcs,
 		})
 	} else if m.Text != "" && m.ToolResult == nil {

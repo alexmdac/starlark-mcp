@@ -191,6 +191,53 @@ func TestOpenAISendMessage_ToolDefs(t *testing.T) {
 	}
 }
 
+func TestOpenAISendMessage_AssistantTextWithToolCalls(t *testing.T) {
+	var gotReq openAIRequest
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		body, _ := io.ReadAll(r.Body)
+		json.Unmarshal(body, &gotReq)
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(openAIResponse{
+			Choices: []openAIChoice{
+				{Message: openAIMessage{Role: "assistant", Content: "ok"}},
+			},
+		})
+	}))
+	defer srv.Close()
+
+	p := NewOpenAI("k", "m", srv.URL)
+	_, err := p.SendMessage(context.Background(), &MessageParams{
+		MaxTokens: 100,
+		Messages: []Message{
+			{Role: RoleUser, Text: "run it"},
+			{
+				Role:      RoleAssistant,
+				Text:      "I'll run that for you.",
+				ToolCalls: []ToolCall{{ID: "t1", Name: "foo", Input: json.RawMessage(`{}`)}},
+			},
+			{
+				Role:       RoleUser,
+				ToolResult: &ToolResult{ToolCallID: "t1", Content: "42"},
+			},
+		},
+	})
+	if err != nil {
+		t.Fatalf("SendMessage: %v", err)
+	}
+
+	// Message 1 should be the assistant with both text and tool_calls.
+	msg := gotReq.Messages[1]
+	if msg.Role != "assistant" {
+		t.Errorf("role = %q, want assistant", msg.Role)
+	}
+	if msg.Content != "I'll run that for you." {
+		t.Errorf("content = %q, want assistant text preserved", msg.Content)
+	}
+	if len(msg.ToolCalls) != 1 {
+		t.Errorf("tool_calls = %d, want 1", len(msg.ToolCalls))
+	}
+}
+
 func TestOpenAISendMessage_ToolResult(t *testing.T) {
 	var gotReq openAIRequest
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
