@@ -130,6 +130,67 @@ func TestOpenAISendMessage_ToolUse(t *testing.T) {
 	}
 }
 
+func TestOpenAISendMessage_ToolDefs(t *testing.T) {
+	var gotReq openAIRequest
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		body, _ := io.ReadAll(r.Body)
+		json.Unmarshal(body, &gotReq)
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(openAIResponse{
+			Choices: []openAIChoice{
+				{Message: openAIMessage{Role: "assistant", Content: "ok"}},
+			},
+		})
+	}))
+	defer srv.Close()
+
+	p := NewOpenAI("k", "m", srv.URL)
+	_, err := p.SendMessage(context.Background(), &MessageParams{
+		MaxTokens: 100,
+		Messages:  []Message{{Role: RoleUser, Text: "hi"}},
+		Tools: []ToolDef{
+			{
+				Name:        "execute-starlark",
+				Description: "Run a Starlark program",
+				InputSchema: map[string]any{
+					"type": "object",
+					"properties": map[string]any{
+						"program": map[string]any{"type": "string"},
+					},
+					"required": []any{"program"},
+				},
+			},
+		},
+	})
+	if err != nil {
+		t.Fatalf("SendMessage: %v", err)
+	}
+
+	if len(gotReq.Tools) != 1 {
+		t.Fatalf("tools len = %d, want 1", len(gotReq.Tools))
+	}
+	tool := gotReq.Tools[0]
+	if tool.Type != "function" {
+		t.Errorf("type = %q, want function", tool.Type)
+	}
+	if tool.Function.Name != "execute-starlark" {
+		t.Errorf("name = %q", tool.Function.Name)
+	}
+	if tool.Function.Description != "Run a Starlark program" {
+		t.Errorf("description = %q", tool.Function.Description)
+	}
+	if tool.Function.Parameters["type"] != "object" {
+		t.Errorf("parameters type = %v", tool.Function.Parameters["type"])
+	}
+	props, ok := tool.Function.Parameters["properties"].(map[string]any)
+	if !ok {
+		t.Fatalf("properties not a map")
+	}
+	if _, ok := props["program"]; !ok {
+		t.Errorf("missing 'program' in properties")
+	}
+}
+
 func TestOpenAISendMessage_ToolResult(t *testing.T) {
 	var gotReq openAIRequest
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {

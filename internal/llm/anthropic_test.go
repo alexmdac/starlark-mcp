@@ -174,6 +174,62 @@ func TestAnthropicSendMessage_ToolResult(t *testing.T) {
 	}
 }
 
+func TestAnthropicSendMessage_ToolDefs(t *testing.T) {
+	var gotReq anthropicRequest
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		body, _ := io.ReadAll(r.Body)
+		json.Unmarshal(body, &gotReq)
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(anthropicResponse{
+			Content: []anthropicContentBlock{{Type: "text", Text: "ok"}},
+		})
+	}))
+	defer srv.Close()
+
+	p := NewAnthropic("k", "m", srv.URL)
+	_, err := p.SendMessage(context.Background(), &MessageParams{
+		MaxTokens: 100,
+		Messages:  []Message{{Role: RoleUser, Text: "hi"}},
+		Tools: []ToolDef{
+			{
+				Name:        "execute-starlark",
+				Description: "Run a Starlark program",
+				InputSchema: map[string]any{
+					"type": "object",
+					"properties": map[string]any{
+						"program": map[string]any{"type": "string"},
+					},
+					"required": []any{"program"},
+				},
+			},
+		},
+	})
+	if err != nil {
+		t.Fatalf("SendMessage: %v", err)
+	}
+
+	if len(gotReq.Tools) != 1 {
+		t.Fatalf("tools len = %d, want 1", len(gotReq.Tools))
+	}
+	tool := gotReq.Tools[0]
+	if tool.Name != "execute-starlark" {
+		t.Errorf("name = %q", tool.Name)
+	}
+	if tool.Description != "Run a Starlark program" {
+		t.Errorf("description = %q", tool.Description)
+	}
+	if tool.InputSchema["type"] != "object" {
+		t.Errorf("input_schema type = %v", tool.InputSchema["type"])
+	}
+	props, ok := tool.InputSchema["properties"].(map[string]any)
+	if !ok {
+		t.Fatalf("properties not a map")
+	}
+	if _, ok := props["program"]; !ok {
+		t.Errorf("missing 'program' in properties")
+	}
+}
+
 func TestAnthropicSendMessage_APIError(t *testing.T) {
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusTooManyRequests)
