@@ -23,6 +23,36 @@ func TestBuiltins(t *testing.T) {
 			code:        `load("foo", "bar")`,
 			expectedErr: "no such module: \"foo\"",
 		},
+		{
+			name:           "round_float_no_ndigits",
+			code:           `print(round(2.7))`,
+			expectedResult: "3",
+		},
+		{
+			name:           "round_float_ndigits",
+			code:           `print(round(3.14159, 2))`,
+			expectedResult: "3.14",
+		},
+		{
+			name:           "round_half_away_from_zero",
+			code:           `print(round(2.5))`,
+			expectedResult: "3",
+		},
+		{
+			name:           "round_half_away_from_zero_odd",
+			code:           `print(round(3.5))`,
+			expectedResult: "4",
+		},
+		{
+			name:           "round_int",
+			code:           `print(round(5))`,
+			expectedResult: "5",
+		},
+		{
+			name:           "round_negative_ndigits",
+			code:           `print(round(1234.5, -2))`,
+			expectedResult: "1200.0",
+		},
 	}
 
 	for _, tc := range testCases {
