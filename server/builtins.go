@@ -4,7 +4,7 @@ import (
 	_ "embed"
 	"fmt"
 
-	starlarkmath "go.starlark.net/lib/math"
+	"go.starlark.net/lib/math"
 	"go.starlark.net/starlark"
 	"go.starlark.net/syntax"
 )
@@ -12,7 +12,7 @@ import (
 func loadBuiltinModule(thread *starlark.Thread, module string) (starlark.StringDict, error) {
 	switch module {
 	case "math":
-		return starlarkmath.Module.Members, nil
+		return math.Module.Members, nil
 	default:
 		return nil, fmt.Errorf("no such module: %q", module)
 	}
@@ -59,10 +59,5 @@ func compilePrelude() (starlark.StringDict, error) {
 
 // predeclared returns global symbols that do not need to be loaded.
 func predeclared() starlark.StringDict {
-	// Return a copy so callers can't mutate the shared prelude.
-	d := make(starlark.StringDict, len(prelude))
-	for k, v := range prelude {
-		d[k] = v
-	}
-	return d
+	return prelude
 }
