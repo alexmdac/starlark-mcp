@@ -10,9 +10,9 @@ import (
 	"math"
 	"os"
 	"strings"
-	"time"
 
 	"github.com/alexmdac/starlark-mcp/server"
+	"github.com/modelcontextprotocol/go-sdk/mcp"
 )
 
 type evalResult struct {
@@ -42,14 +42,36 @@ func main() {
 		baseURL = "https://api.anthropic.com"
 	}
 
-	client := NewClient(apiKey, model, baseURL)
+	llm := NewClient(apiKey, model, baseURL)
+
+	// Set up MCP server + client via in-memory transport.
+	ctx := context.Background()
+	t1, t2 := mcp.NewInMemoryTransports()
+	srv := server.New()
+	mcpClient := mcp.NewClient(&mcp.Implementation{Name: "eval-client"}, nil)
+
+	if _, err := srv.Connect(ctx, t1, nil); err != nil {
+		fmt.Fprintf(os.Stderr, "failed to connect MCP server: %v\n", err)
+		os.Exit(1)
+	}
+	session, err := mcpClient.Connect(ctx, t2, nil)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "failed to connect MCP client: %v\n", err)
+		os.Exit(1)
+	}
+	defer session.Close()
+
+	// Discover tools from the MCP server.
+	toolDefs, err := mcpToolDefs(ctx, session)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "failed to list tools: %v\n", err)
+		os.Exit(1)
+	}
 
 	results := make([]evalResult, len(Cases))
-
-	// Run cases sequentially (simple; parallelism can be added later with goroutines).
 	for i, ec := range Cases {
 		fmt.Fprintf(os.Stderr, "Running %s...\n", ec.Name)
-		results[i] = runEval(client, ec)
+		results[i] = runEval(llm, session, toolDefs, ec)
 		mark := "✗"
 		if results[i].Passed {
 			mark = "✓"
@@ -60,32 +82,66 @@ func main() {
 	printSummary(model, results)
 }
 
-func runEval(client *Client, ec Case) evalResult {
+// mcpToolDefs calls ListTools on the MCP session and converts the results
+// into the ToolDef format expected by the Anthropic Messages API.
+func mcpToolDefs(ctx context.Context, session *mcp.ClientSession) ([]ToolDef, error) {
+	res, err := session.ListTools(ctx, nil)
+	if err != nil {
+		return nil, err
+	}
+	defs := make([]ToolDef, len(res.Tools))
+	for i, tool := range res.Tools {
+		// Convert the JSON Schema to map[string]any via JSON round-trip.
+		var schema map[string]any
+		if tool.InputSchema != nil {
+			b, err := json.Marshal(tool.InputSchema)
+			if err != nil {
+				return nil, fmt.Errorf("marshal schema for %s: %w", tool.Name, err)
+			}
+			if err := json.Unmarshal(b, &schema); err != nil {
+				return nil, fmt.Errorf("unmarshal schema for %s: %w", tool.Name, err)
+			}
+		}
+		defs[i] = ToolDef{
+			Name:        tool.Name,
+			Description: tool.Description,
+			InputSchema: schema,
+		}
+	}
+	return defs, nil
+}
+
+// callMCPTool invokes a tool on the MCP server and returns the text output.
+func callMCPTool(ctx context.Context, session *mcp.ClientSession, name string, rawInput json.RawMessage) (output string, isError bool, err error) {
+	var args map[string]any
+	if err := json.Unmarshal(rawInput, &args); err != nil {
+		return "", false, fmt.Errorf("unmarshal tool input: %w", err)
+	}
+
+	res, err := session.CallTool(ctx, &mcp.CallToolParams{
+		Name:      name,
+		Arguments: args,
+	})
+	if err != nil {
+		return "", false, fmt.Errorf("CallTool %s: %w", name, err)
+	}
+
+	// Extract text content from the result.
+	var sb strings.Builder
+	for _, c := range res.Content {
+		if tc, ok := c.(*mcp.TextContent); ok {
+			sb.WriteString(tc.Text)
+		}
+	}
+	return sb.String(), res.IsError, nil
+}
+
+func runEval(llm *Client, session *mcp.ClientSession, toolDefs []ToolDef, ec Case) evalResult {
 	const maxAttempts = 3
 	const maxIterations = 6
 
-	systemPrompt := "You are solving a programming task using the execute-starlark tool. " +
-		"Use the tool to write and run a Starlark program that produces the requested output. " +
-		"Do not explain your work — just call the tool." +
-		"\n\nThe following documentation describes the built-in functions available:\n\n" +
-		server.BuiltinsDocumentation
-
-	toolDef := ToolDef{
-		Name:        "execute-starlark",
-		Description: server.ExecuteStarlarkDescription,
-		InputSchema: map[string]any{
-			"type": "object",
-			"properties": map[string]any{
-				"program": map[string]any{
-					"type": "string",
-				},
-				"timeout_secs": map[string]any{
-					"type": "number",
-				},
-			},
-			"required": []string{"program", "timeout_secs"},
-		},
-	}
+	const systemPrompt = "You have access to tools. Use them to solve the task. " +
+		"Do not explain your work — just call the appropriate tool."
 
 	messages := []Message{
 		{
@@ -94,9 +150,7 @@ func runEval(client *Client, ec Case) evalResult {
 		},
 	}
 
-	result := evalResult{
-		Case: ec,
-	}
+	result := evalResult{Case: ec}
 
 	for iter := 0; iter < maxIterations; iter++ {
 		if result.Attempts >= maxAttempts {
@@ -107,10 +161,10 @@ func runEval(client *Client, ec Case) evalResult {
 			MaxTokens: 4096,
 			System:    systemPrompt,
 			Messages:  messages,
-			Tools:     []ToolDef{toolDef},
+			Tools:     toolDefs,
 		}
 
-		resp, err := client.SendRequest(context.Background(), req)
+		resp, err := llm.SendRequest(context.Background(), req)
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "API request failed for %s: %v\n", ec.Name, err)
 			break
@@ -119,7 +173,6 @@ func runEval(client *Client, ec Case) evalResult {
 		result.TokensIn += resp.Usage.InputTokens
 		result.TokensOut += resp.Usage.OutputTokens
 
-		// Append assistant message to conversation.
 		messages = append(messages, ResponseToMessage(resp))
 
 		// Find tool_use block.
@@ -132,34 +185,37 @@ func runEval(client *Client, ec Case) evalResult {
 		}
 
 		if toolUse == nil {
-			// No tool use, nudge the model.
 			messages = append(messages, Message{
 				Role:    "user",
-				Content: []map[string]any{TextBlock("Please use the execute-starlark tool.")},
+				Content: []map[string]any{TextBlock("Please use a tool to solve this.")},
 			})
 			continue
 		}
 
-		// Parse tool input.
-		var input ToolInput
-		if err := json.Unmarshal(toolUse.Input, &input); err != nil {
-			fmt.Fprintf(os.Stderr, "failed to parse tool input for %s: %v\n", ec.Name, err)
-			break
-		}
-
-		// Execute with a fixed 30s timeout.
-		execCtx, execCancel := context.WithTimeout(context.Background(), 30*time.Second)
-		output, execErr := server.ExecuteStarlark(execCtx, input.Program)
-		execCancel()
+		// Call the tool via MCP.
+		output, toolIsError, callErr := callMCPTool(
+			context.Background(), session, toolUse.Name, toolUse.Input,
+		)
 
 		result.Attempts++
 
-		if execErr != nil {
-			result.Outputs = append(result.Outputs, fmt.Sprintf("ERROR: %v", execErr))
+		if callErr != nil {
+			result.Outputs = append(result.Outputs, fmt.Sprintf("ERROR: %v", callErr))
 			messages = append(messages, Message{
 				Role: "user",
 				Content: []map[string]any{
-					ToolResultBlock(toolUse.ID, execErr.Error(), true),
+					ToolResultBlock(toolUse.ID, callErr.Error(), true),
+				},
+			})
+			continue
+		}
+
+		if toolIsError {
+			result.Outputs = append(result.Outputs, fmt.Sprintf("ERROR: %s", output))
+			messages = append(messages, Message{
+				Role: "user",
+				Content: []map[string]any{
+					ToolResultBlock(toolUse.ID, output, true),
 				},
 			})
 			continue

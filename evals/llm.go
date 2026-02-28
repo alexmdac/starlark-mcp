@@ -114,11 +114,6 @@ func ResponseToMessage(resp *Response) Message {
 	}
 }
 
-// ToolInput represents the parsed input for the execute-starlark tool.
-type ToolInput struct {
-	Program     string  `json:"program"`
-	TimeoutSecs float64 `json:"timeout_secs"`
-}
 
 // Client is a simple client for the Anthropic Messages API.
 type Client struct {
