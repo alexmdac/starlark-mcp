@@ -149,6 +149,18 @@ func (d *display) stop() {
 	d.render()
 }
 
+const (
+	colorReset  = "\033[0m"
+	colorGreen  = "\033[32m"
+	colorRed    = "\033[31m"
+	colorYellow = "\033[33m"
+	colorDim    = "\033[2m"
+	colorBold   = "\033[1m"
+	colorCyan   = "\033[36m"
+)
+
+var spinnerFrames = []string{"⠋", "⠙", "⠹", "⠸", "⠼", "⠴", "⠦", "⠧", "⠇", "⠏"}
+
 func (d *display) render() {
 	d.mu.Lock()
 	defer d.mu.Unlock()
@@ -158,19 +170,22 @@ func (d *display) render() {
 	fmt.Fprintf(os.Stderr, "\033[%dA", n)
 
 	now := time.Now()
+	frame := int(now.UnixMilli()/80) % len(spinnerFrames)
 	for i, c := range d.cases {
 		// Clear line and write status.
 		fmt.Fprintf(os.Stderr, "\033[2K")
 		if d.done[i] {
-			mark := "✗"
 			if d.passed[i] {
-				mark = "✓"
+				fmt.Fprintf(os.Stderr, "  %s✔ %s%s %s(%.1fs, %d attempts)%s\n",
+					colorGreen, c.Name, colorReset, colorDim, d.durations[i].Seconds(), d.attempts[i], colorReset)
+			} else {
+				fmt.Fprintf(os.Stderr, "  %s✘ %s%s %s(%.1fs, %d attempts)%s\n",
+					colorRed, c.Name, colorReset, colorDim, d.durations[i].Seconds(), d.attempts[i], colorReset)
 			}
-			fmt.Fprintf(os.Stderr, "  %s %s (%.1fs, %d attempts)\n",
-				mark, c.Name, d.durations[i].Seconds(), d.attempts[i])
 		} else {
 			elapsed := now.Sub(d.startTimes[i])
-			fmt.Fprintf(os.Stderr, "  ⋯ %s (%.1fs)\n", c.Name, elapsed.Seconds())
+			fmt.Fprintf(os.Stderr, "  %s%s %s%s %s(%.1fs)%s\n",
+				colorYellow, spinnerFrames[frame], c.Name, colorReset, colorDim, elapsed.Seconds(), colorReset)
 		}
 	}
 }
@@ -342,9 +357,9 @@ func printSummary(model string, results []evalResult) {
 		4: "HARD",
 	}
 
-	fmt.Printf("\n%s\n", strings.Repeat("═", 62))
-	fmt.Printf("EVAL RESULTS — model: %s\n", model)
-	fmt.Println(strings.Repeat("═", 62))
+	fmt.Printf("\n%s%s%s\n", colorCyan, strings.Repeat("═", 62), colorReset)
+	fmt.Printf("%s%sEVAL RESULTS — model: %s%s\n", colorBold, colorCyan, model, colorReset)
+	fmt.Printf("%s%s%s\n", colorCyan, strings.Repeat("═", 62), colorReset)
 
 	totalPassed := 0
 	totalCases := 0
@@ -363,40 +378,44 @@ func printSummary(model string, results []evalResult) {
 			continue
 		}
 
-		fmt.Printf("\nTIER %d: %s\n", tier, tierNames[tier])
+		fmt.Printf("\n%s%sTIER %d: %s%s\n", colorBold, colorCyan, tier, tierNames[tier], colorReset)
 
 		tierPassed := 0
 		tierTotal := len(tierResults)
 		tierScore := 0.0
 
 		for _, r := range tierResults {
-			mark := "✗"
+			var mark, color string
 			if r.Passed {
-				mark = "✓"
+				mark = "✔"
+				color = colorGreen
 				tierPassed++
+			} else {
+				mark = "✘"
+				color = colorRed
 			}
 			name := r.Case.Name
 			padding := 35 - len(name)
 			if padding < 1 {
 				padding = 1
 			}
-			fmt.Printf("  %s %s%s attempts: %d  score: %.2f\n",
-				mark, name, strings.Repeat(" ", padding), r.Attempts, r.Score)
+			fmt.Printf("  %s%s%s %s%s%sattempts: %d  score: %.2f%s\n",
+				color, mark, colorReset, name, strings.Repeat(" ", padding), colorDim, r.Attempts, r.Score, colorReset)
 			tierScore += r.Score
 			totalTokensIn += r.TokensIn
 			totalTokensOut += r.TokensOut
 		}
 
-		fmt.Printf("  Tier score: %.2f (%d/%d passed)\n",
-			tierScore/float64(tierTotal), tierPassed, tierTotal)
+		fmt.Printf("  %sTier score: %.2f (%d/%d passed)%s\n",
+			colorDim, tierScore/float64(tierTotal), tierPassed, tierTotal, colorReset)
 
 		totalPassed += tierPassed
 		totalCases += tierTotal
 		totalScore += tierScore
 	}
 
-	fmt.Printf("\n%s\n", strings.Repeat("─", 62))
-	fmt.Printf("OVERALL: %.2f (%d/%d passed)  tokens: %d in, %d out\n",
-		totalScore/float64(totalCases), totalPassed, totalCases, totalTokensIn, totalTokensOut)
-	fmt.Println(strings.Repeat("─", 62))
+	fmt.Printf("\n%s%s%s\n", colorCyan, strings.Repeat("─", 62), colorReset)
+	fmt.Printf("%s%sOVERALL: %.2f (%d/%d passed)  tokens: %d in, %d out%s\n",
+		colorBold, colorCyan, totalScore/float64(totalCases), totalPassed, totalCases, totalTokensIn, totalTokensOut, colorReset)
+	fmt.Printf("%s%s%s\n", colorCyan, strings.Repeat("─", 62), colorReset)
 }
