@@ -44,7 +44,7 @@ func main() {
 
 	baseURL := os.Getenv("ANTHROPIC_BASE_URL")
 	if baseURL == "" {
-		baseURL = "https://api.anthropic.com"
+		baseURL = "http://169.254.169.254/gateway/llm/anthropic"
 	}
 
 	ctx, cancel := signal.NotifyContext(context.Background(), os.Interrupt)
