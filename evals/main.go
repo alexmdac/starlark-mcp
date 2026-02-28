@@ -431,7 +431,7 @@ func printSummary(model string, results []evalResult) {
 				color = colorRed
 			}
 			fmt.Printf(rowFmt,
-				color, mark, colorReset, r.Case.Name, colorDim, r.Attempts, r.Score, r.LLMTime.Round(time.Millisecond), r.StarlarkTime.Round(time.Millisecond), colorReset)
+				color, mark, colorReset, r.Case.Name, colorDim, r.Attempts, r.Score, r.LLMTime.Round(time.Second), r.StarlarkTime.Round(time.Millisecond), colorReset)
 			tierScore += r.Score
 			totalTokensIn += r.TokensIn
 			totalTokensOut += r.TokensOut
