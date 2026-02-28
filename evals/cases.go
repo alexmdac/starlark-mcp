@@ -16,10 +16,10 @@ type evalCase struct {
 	judge  func(output string) bool
 }
 
-// hereDoc dedents a backtick string for use as an inline literal.
+// dedent dedents a backtick string for use as an inline literal.
 // It strips leading/trailing blank lines, computes the longest common
 // whitespace prefix across all non-empty lines, and removes it.
-func hereDoc(s string) string {
+func dedent(s string) string {
 	lines := strings.Split(s, "\n")
 
 	// Strip leading blank lines.
@@ -186,11 +186,11 @@ var cases = []evalCase{
 	{
 		name: "print_numbers_1_to_20",
 		tier: 1,
-		prompt: hereDoc(`
+		prompt: dedent(`
 			Print the integers 1 to 20, one per line. Each line should contain just
 			the number, nothing else.
 		`),
-		judge: exactOutput(hereDoc(`
+		judge: exactOutput(dedent(`
 			1
 			2
 			3
@@ -216,7 +216,7 @@ var cases = []evalCase{
 	{
 		name: "reverse_string",
 		tier: 1,
-		prompt: hereDoc(`
+		prompt: dedent(`
 			Reverse the string "Hello, World!" and print the result. Print only the
 			reversed string, nothing else.
 		`),
@@ -233,13 +233,13 @@ var cases = []evalCase{
 	{
 		name: "fizzbuzz",
 		tier: 2,
-		prompt: hereDoc(`
+		prompt: dedent(`
 			Print FizzBuzz for numbers 1 through 30, one entry per line. For multiples
 			of 3 print "Fizz", for multiples of 5 print "Buzz", for multiples of both
 			print "FizzBuzz", otherwise print the number. Print only the output,
 			nothing else.
 		`),
-		judge: exactOutput(hereDoc(`
+		judge: exactOutput(dedent(`
 			1
 			2
 			Fizz
@@ -275,7 +275,7 @@ var cases = []evalCase{
 	{
 		name: "is_prime_104729",
 		tier: 2,
-		prompt: hereDoc(`
+		prompt: dedent(`
 			Determine whether 104729 is a prime number. Print "true" if it is prime,
 			or "false" if it is not. Print only that single word, nothing else.
 		`),
@@ -284,7 +284,7 @@ var cases = []evalCase{
 	{
 		name: "gcd_48_18",
 		tier: 2,
-		prompt: hereDoc(`
+		prompt: dedent(`
 			Compute the greatest common divisor (GCD) of 48 and 18. Print only the
 			number, nothing else.
 		`),
@@ -293,7 +293,7 @@ var cases = []evalCase{
 	{
 		name: "count_vowels",
 		tier: 2,
-		prompt: hereDoc(`
+		prompt: dedent(`
 			Count the number of vowels (a, e, i, o, u, case-insensitive) in the string
 			"The quick brown fox jumps over the lazy dog". Print only the count,
 			nothing else.
@@ -303,7 +303,7 @@ var cases = []evalCase{
 	{
 		name: "decimal_to_binary",
 		tier: 2,
-		prompt: hereDoc(`
+		prompt: dedent(`
 			Convert the decimal number 255 to its binary string representation with
 			no prefix (no "0b"). Print only the binary string, nothing else.
 		`),
@@ -312,12 +312,12 @@ var cases = []evalCase{
 	{
 		name: "pascals_triangle",
 		tier: 2,
-		prompt: hereDoc(`
+		prompt: dedent(`
 			Print the first 10 rows of Pascal's triangle (rows 0 through 9). Print
 			one row per line, with numbers separated by single spaces. Row 0 is "1",
 			row 1 is "1 1", etc. Print only the triangle, nothing else.
 		`),
-		judge: exactOutput(hereDoc(`
+		judge: exactOutput(dedent(`
 			1
 			1 1
 			1 2 1
@@ -335,13 +335,13 @@ var cases = []evalCase{
 	{
 		name: "sieve_of_eratosthenes",
 		tier: 3,
-		prompt: hereDoc(`
+		prompt: dedent(`
 			Use the Sieve of Eratosthenes to find all prime numbers below 10000.
 			Print three lines: first line is the count of primes found, second line
 			is the first 10 primes separated by spaces, third line is the last 10
 			primes separated by spaces. Print only these three lines, nothing else.
 		`),
-		judge: exactOutput(hereDoc(`
+		judge: exactOutput(dedent(`
 			1229
 			2 3 5 7 11 13 17 19 23 29
 			9887 9901 9907 9923 9929 9931 9941 9949 9967 9973
@@ -350,12 +350,12 @@ var cases = []evalCase{
 	{
 		name: "fibonacci_30",
 		tier: 3,
-		prompt: hereDoc(`
+		prompt: dedent(`
 			Print the first 30 Fibonacci numbers F(0) through F(29), one per line.
 			F(0)=0, F(1)=1, F(n)=F(n-1)+F(n-2). Print only the numbers, one per
 			line, nothing else.
 		`),
-		judge: exactOutput(hereDoc(`
+		judge: exactOutput(dedent(`
 			0
 			1
 			1
@@ -391,13 +391,13 @@ var cases = []evalCase{
 	{
 		name: "balanced_parentheses",
 		tier: 3,
-		prompt: hereDoc(`
+		prompt: dedent(`
 			Check whether each of the following strings has balanced parentheses.
 			For each string, print "true" if balanced or "false" if not, one result
 			per line in order. The strings are: "(()())", "(()", "()()", ")(", "",
 			"((()))", "(()))". Print only "true" or "false" on each line, nothing else.
 		`),
-		judge: exactOutput(hereDoc(`
+		judge: exactOutput(dedent(`
 			true
 			false
 			true
@@ -410,7 +410,7 @@ var cases = []evalCase{
 	{
 		name: "longest_common_subsequence",
 		tier: 3,
-		prompt: hereDoc(`
+		prompt: dedent(`
 			Find the length of the longest common subsequence of "ABCBDAB" and
 			"BDCAB". Print only the number, nothing else.
 		`),
@@ -419,12 +419,12 @@ var cases = []evalCase{
 	{
 		name: "roman_numerals",
 		tier: 3,
-		prompt: hereDoc(`
+		prompt: dedent(`
 			Convert each of the following integers to Roman numerals and print each
 			on its own line: 1, 4, 9, 14, 42, 99, 1994, 3999. Print only the Roman
 			numeral strings, one per line, nothing else.
 		`),
-		judge: exactOutput(hereDoc(`
+		judge: exactOutput(dedent(`
 			I
 			IV
 			IX
@@ -438,7 +438,7 @@ var cases = []evalCase{
 	{
 		name: "run_length_encoding",
 		tier: 3,
-		prompt: hereDoc(`
+		prompt: dedent(`
 			Run-length encode the string "aaabbbccccdddddeee". Output format: each
 			character followed immediately by its count, concatenated together. For
 			example, "aabbc" becomes "a2b2c1". Print only the encoded string,
@@ -451,7 +451,7 @@ var cases = []evalCase{
 	{
 		name: "max_subarray_sum",
 		tier: 4,
-		prompt: hereDoc(`
+		prompt: dedent(`
 			Find the maximum contiguous subarray sum (Kadane's algorithm) of the
 			array [-2, 1, -3, 4, -1, 2, 1, -5, 4]. Print only the number,
 			nothing else.
@@ -461,7 +461,7 @@ var cases = []evalCase{
 	{
 		name: "count_islands",
 		tier: 4,
-		prompt: hereDoc(`
+		prompt: dedent(`
 			Count the number of islands in a 2D grid. An island is a group of 1s
 			connected horizontally or vertically. The grid (4 rows, 5 columns) is:
 			Row 0: 1 1 0 0 0
@@ -475,7 +475,7 @@ var cases = []evalCase{
 	{
 		name: "levenshtein_distance",
 		tier: 4,
-		prompt: hereDoc(`
+		prompt: dedent(`
 			Compute the Levenshtein (edit) distance between "kitten" and "sitting".
 			Print only the number, nothing else.
 		`),
@@ -484,7 +484,7 @@ var cases = []evalCase{
 	{
 		name: "minimum_coins",
 		tier: 4,
-		prompt: hereDoc(`
+		prompt: dedent(`
 			Find the minimum number of coins from denominations [1, 5, 10, 25]
 			needed to make exactly 63 cents. Print only the number, nothing else.
 		`),
@@ -493,7 +493,7 @@ var cases = []evalCase{
 	{
 		name: "topological_sort",
 		tier: 4,
-		prompt: hereDoc(`
+		prompt: dedent(`
 			Perform a topological sort on a directed acyclic graph with these edges:
 			A→B, A→C, B→D, C→D, D→E. Print the vertices in a valid topological
 			order, separated by spaces, on a single line. Print only the vertex
@@ -506,14 +506,14 @@ var cases = []evalCase{
 	{
 		name: "matrix_multiply",
 		tier: 4,
-		prompt: hereDoc(`
+		prompt: dedent(`
 			Multiply these two matrices and print the result.
 			Matrix A (2x3): [[1, 2, 3], [4, 5, 6]]
 			Matrix B (3x2): [[7, 8], [9, 10], [11, 12]]
 			Print the resulting 2x2 matrix, one row per line, with numbers separated
 			by spaces. Print only the matrix, nothing else.
 		`),
-		judge: exactOutput(hereDoc(`
+		judge: exactOutput(dedent(`
 			58 64
 			139 154
 		`)),
@@ -521,13 +521,13 @@ var cases = []evalCase{
 	{
 		name: "spiral_matrix",
 		tier: 4,
-		prompt: hereDoc(`
+		prompt: dedent(`
 			Generate a 5x5 spiral matrix filled with numbers 1 to 25 in clockwise
 			spiral order starting from the top-left. Print the matrix with one row
 			per line, numbers separated by spaces. Print only the matrix,
 			nothing else.
 		`),
-		judge: exactOutput(hereDoc(`
+		judge: exactOutput(dedent(`
 			1 2 3 4 5
 			16 17 18 19 6
 			15 24 25 20 7
@@ -538,7 +538,7 @@ var cases = []evalCase{
 	{
 		name: "knapsack_01",
 		tier: 4,
-		prompt: hereDoc(`
+		prompt: dedent(`
 			Solve the 0/1 knapsack problem. Capacity: 50. Items (weight, value):
 			(10, 60), (20, 100), (30, 120). Print the maximum total value
 			achievable. Print only the number, nothing else.
@@ -548,7 +548,7 @@ var cases = []evalCase{
 	{
 		name: "longest_palindrome_substring",
 		tier: 4,
-		prompt: hereDoc(`
+		prompt: dedent(`
 			Find the longest palindromic substring of "babad". If there are multiple
 			of the same length, print the one that appears first. Print only the
 			substring, nothing else.
@@ -558,7 +558,7 @@ var cases = []evalCase{
 	{
 		name: "sudoku_solver",
 		tier: 4,
-		prompt: hereDoc(`
+		prompt: dedent(`
 			Solve this Sudoku puzzle. The grid uses 0 for empty cells:
 			5 3 0 0 7 0 0 0 0
 			6 0 0 1 9 5 0 0 0
@@ -572,7 +572,7 @@ var cases = []evalCase{
 			Print the completed 9x9 grid with numbers separated by spaces, one row
 			per line. Print only the grid, nothing else.
 		`),
-		judge: exactOutput(hereDoc(`
+		judge: exactOutput(dedent(`
 			5 3 4 6 7 8 9 1 2
 			6 7 2 1 9 5 3 4 8
 			1 9 8 3 4 2 5 6 7
@@ -589,14 +589,14 @@ var cases = []evalCase{
 	{
 		name: "game_of_life",
 		tier: 5,
-		prompt: hereDoc(`
+		prompt: dedent(`
 			Simulate 10 steps of Conway's Game of Life on an 8x8 grid. The initial
 			state has live cells (1) at positions (row, col, 0-indexed): (1,2),
 			(2,3), (3,1), (3,2), (3,3). All other cells are dead (0). Print the
 			final 8x8 grid after 10 steps, one row per line, with cells separated
 			by spaces. Print only the grid, nothing else.
 		`),
-		judge: exactOutput(hereDoc(`
+		judge: exactOutput(dedent(`
 			0 0 0 0 0 0 0 0
 			0 0 0 0 0 0 0 0
 			0 0 0 0 0 0 0 0
@@ -610,7 +610,7 @@ var cases = []evalCase{
 	{
 		name: "n_queens",
 		tier: 5,
-		prompt: hereDoc(`
+		prompt: dedent(`
 			Solve the 8-queens problem: place 8 queens on an 8x8 chessboard so that
 			no two queens attack each other. Print the board as 8 lines of 8
 			characters each, using "Q" for a queen and "." for empty. Separate
@@ -621,7 +621,7 @@ var cases = []evalCase{
 	{
 		name: "bigint_factorial_50",
 		tier: 5,
-		prompt: hereDoc(`
+		prompt: dedent(`
 			Compute 50! (50 factorial). Starlark supports arbitrary-precision
 			integers. Print only the number, nothing else.
 		`),
@@ -630,7 +630,7 @@ var cases = []evalCase{
 	{
 		name: "postfix_eval",
 		tier: 5,
-		prompt: hereDoc(`
+		prompt: dedent(`
 			Evaluate the postfix (reverse Polish notation) expression:
 			"3 4 + 2 * 7 /"
 			Operators are +, -, *, / (integer division). Print only the result as
@@ -641,14 +641,14 @@ var cases = []evalCase{
 	{
 		name: "text_histogram",
 		tier: 5,
-		prompt: hereDoc(`
+		prompt: dedent(`
 			Count the frequency of each word (case-insensitive) in the text:
 			"the cat sat on the mat the cat sat"
 			Print each word and its count in the format "word count", one per line,
 			sorted by count descending then alphabetically. Print only the
 			word-count lines, nothing else.
 		`),
-		judge: exactOutput(hereDoc(`
+		judge: exactOutput(dedent(`
 			the 3
 			cat 2
 			sat 2

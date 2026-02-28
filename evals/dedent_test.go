@@ -6,7 +6,7 @@ import (
 	"testing"
 )
 
-func TestHereDoc(t *testing.T) {
+func TestDedent(t *testing.T) {
 	tests := []struct {
 		name string
 		in   string
@@ -54,9 +54,9 @@ func TestHereDoc(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got := hereDoc(tt.in)
+			got := dedent(tt.in)
 			if got != tt.want {
-				t.Errorf("hereDoc() = %q, want %q", got, tt.want)
+				t.Errorf("dedent() = %q, want %q", got, tt.want)
 			}
 		})
 	}
