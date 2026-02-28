@@ -197,8 +197,8 @@ func (d *display) render() {
 			}
 		} else {
 			elapsed := now.Sub(d.startTimes[i])
-			fmt.Fprintf(os.Stderr, "  %s%s %s%s %s[T%d] (%.1fs)%s\n",
-				colorYellow, spinnerFrames[frame], c.Name, colorReset, colorDim, c.Tier, elapsed.Seconds(), colorReset)
+			fmt.Fprintf(os.Stderr, "  %s%s %s%s %s(%.1fs)%s\n",
+				colorYellow, spinnerFrames[frame], c.Name, colorReset, colorDim, elapsed.Seconds(), colorReset)
 		}
 	}
 }
