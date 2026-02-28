@@ -51,7 +51,7 @@ main()  # Must call explicitly
 
 ## Built-in Functions
 
-A `math` module is available with functions like `sqrt`, `pow`, `sin`, `cos`, `log`, `ceil`, `floor`, and constants `pi` and `e`. Use `load("math", "sqrt", "sin", "pi")` to import them. See the `starlark://builtins` resource for full documentation.
+A `math` module is available with functions like `sqrt`, `pow`, `sin`, `cos`, `log`, `ceil`, `floor`, and constants `pi` and `e`. Use `load("math", "sqrt", "sin", "pi")` to import them.
 
 ## References
 
