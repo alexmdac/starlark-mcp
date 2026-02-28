@@ -201,14 +201,30 @@ func printSummary(model string, results []evalResult) {
 		colorBold, colorCyan, totalScore/float64(totalCases), totalPassed, totalCases, totalTokensIn, totalTokensOut, colorReset)
 	fmt.Printf("%s%s%s\n", colorCyan, strings.Repeat("─", tableWidth), colorReset)
 
-	// Print details for failed cases.
+	// Print details for all failed attempts, including intermediate
+	// failures on cases that eventually passed.
 	for _, r := range results {
-		if r.Passed || len(r.Outputs) == 0 {
+		if len(r.Outputs) == 0 {
 			continue
 		}
-		fmt.Printf("\n%s%sFAILED: %s%s\n", colorBold, colorRed, r.ec.name, colorReset)
-		for i, out := range r.Outputs {
-			fmt.Printf("%sAttempt %d:%s\n%s\n", colorDim, i+1, colorReset, out)
+
+		// Determine which attempts failed. For a passing case the last
+		// attempt succeeded; for a failing case every attempt failed.
+		failedCount := len(r.Outputs)
+		if r.Passed {
+			failedCount-- // last attempt was the successful one
+		}
+		if failedCount == 0 {
+			continue
+		}
+
+		if r.Passed {
+			fmt.Printf("\n%s%sFAILED ATTEMPTS (eventually passed): %s%s\n", colorBold, colorYellow, r.ec.name, colorReset)
+		} else {
+			fmt.Printf("\n%s%sFAILED: %s%s\n", colorBold, colorRed, r.ec.name, colorReset)
+		}
+		for i := 0; i < failedCount; i++ {
+			fmt.Printf("%sAttempt %d:%s\n%s\n", colorDim, i+1, colorReset, r.Outputs[i])
 		}
 	}
 }
