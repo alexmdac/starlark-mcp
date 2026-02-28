@@ -19,7 +19,7 @@ import (
 )
 
 type evalResult struct {
-	Case        Case
+	ec          evalCase
 	Passed      bool
 	Attempts    int
 	Score       float64
@@ -47,12 +47,12 @@ func main() {
 		baseURL = "https://api.anthropic.com"
 	}
 
-	llm := NewClient(apiKey, model, baseURL)
+	llm := newClient(apiKey, model, baseURL)
 
-	disp := newDisplay(Cases)
-	results := make([]evalResult, len(Cases))
+	disp := newDisplay(cases)
+	results := make([]evalResult, len(cases))
 	var wg sync.WaitGroup
-	for i, ec := range Cases {
+	for i, ec := range cases {
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
@@ -94,7 +94,7 @@ func main() {
 // display manages live terminal output for eval progress.
 type display struct {
 	mu         sync.Mutex
-	cases      []Case
+	cases      []evalCase
 	sorted     []int // indices into cases, sorted lexicographically
 	startTimes []time.Time
 	done       []bool
@@ -104,17 +104,17 @@ type display struct {
 	stopCh     chan struct{}
 }
 
-func newDisplay(cases []Case) *display {
+func newDisplay(cs []evalCase) *display {
 	now := time.Now()
 	sorted := make([]int, len(cases))
 	for i := range sorted {
 		sorted[i] = i
 	}
 	sort.Slice(sorted, func(a, b int) bool {
-		return cases[sorted[a]].Name < cases[sorted[b]].Name
+		return cs[sorted[a]].name < cs[sorted[b]].name
 	})
 	d := &display{
-		cases:      cases,
+		cases:      cs,
 		sorted:     sorted,
 		startTimes: make([]time.Time, len(cases)),
 		done:       make([]bool, len(cases)),
@@ -123,11 +123,11 @@ func newDisplay(cases []Case) *display {
 		durations:  make([]time.Duration, len(cases)),
 		stopCh:     make(chan struct{}),
 	}
-	for i := range cases {
+	for i := range cs {
 		d.startTimes[i] = now
 	}
 	// Print initial lines.
-	for range cases {
+	for range cs {
 		fmt.Fprint(os.Stderr, "\n")
 	}
 	d.render()
@@ -192,27 +192,27 @@ func (d *display) render() {
 		if d.done[i] {
 			if d.passed[i] {
 				fmt.Fprintf(os.Stderr, "  %s✔ %s%s %s(%s, %d attempts)%s\n",
-					colorGreen, c.Name, colorReset, colorDim, d.durations[i].Round(time.Millisecond), d.attempts[i], colorReset)
-			} else {
-				fmt.Fprintf(os.Stderr, "  %s✘ %s%s %s(%s, %d attempts)%s\n",
-					colorRed, c.Name, colorReset, colorDim, d.durations[i].Round(time.Millisecond), d.attempts[i], colorReset)
+				colorGreen, c.name, colorReset, colorDim, d.durations[i].Round(time.Millisecond), d.attempts[i], colorReset)
+		} else {
+			fmt.Fprintf(os.Stderr, "  %s✘ %s%s %s(%s, %d attempts)%s\n",
+				colorRed, c.name, colorReset, colorDim, d.durations[i].Round(time.Millisecond), d.attempts[i], colorReset)
 			}
 		} else {
 			elapsed := now.Sub(d.startTimes[i]).Round(time.Second)
 			fmt.Fprintf(os.Stderr, "  %s%s %s%s %s(%s)%s\n",
-				colorYellow, spinnerFrames[frame], c.Name, colorReset, colorDim, elapsed, colorReset)
+				colorYellow, spinnerFrames[frame], c.name, colorReset, colorDim, elapsed, colorReset)
 		}
 	}
 }
 
 // mcpToolDefs calls ListTools on the MCP session and converts the results
 // into the ToolDef format expected by the Anthropic Messages API.
-func mcpToolDefs(ctx context.Context, session *mcp.ClientSession) ([]ToolDef, error) {
+func mcpToolDefs(ctx context.Context, session *mcp.ClientSession) ([]toolDef, error) {
 	res, err := session.ListTools(ctx, nil)
 	if err != nil {
 		return nil, err
 	}
-	defs := make([]ToolDef, len(res.Tools))
+	defs := make([]toolDef, len(res.Tools))
 	for i, tool := range res.Tools {
 		// Convert the JSON Schema to map[string]any via JSON round-trip.
 		var schema map[string]any
@@ -225,7 +225,7 @@ func mcpToolDefs(ctx context.Context, session *mcp.ClientSession) ([]ToolDef, er
 				return nil, fmt.Errorf("unmarshal schema for %s: %w", tool.Name, err)
 			}
 		}
-		defs[i] = ToolDef{
+		defs[i] = toolDef{
 			Name:        tool.Name,
 			Description: tool.Description,
 			InputSchema: schema,
@@ -259,28 +259,28 @@ func callMCPTool(ctx context.Context, session *mcp.ClientSession, name string, r
 	return sb.String(), res.IsError, nil
 }
 
-func runEval(llm *Client, session *mcp.ClientSession, toolDefs []ToolDef, ec Case) evalResult {
+func runEval(llm *client, session *mcp.ClientSession, toolDefs []toolDef, ec evalCase) evalResult {
 	const maxAttempts = 3
 	const maxIterations = 6
 
 	const systemPrompt = "You have access to tools. Use them to solve the task. " +
 		"Do not explain your work — just call the appropriate tool."
 
-	messages := []Message{
+	messages := []message{
 		{
 			Role:    "user",
-			Content: []map[string]any{TextBlock(ec.Prompt)},
+			Content: []map[string]any{textBlock(ec.prompt)},
 		},
 	}
 
-	result := evalResult{Case: ec}
+	result := evalResult{ec: ec}
 
 	for iter := 0; iter < maxIterations; iter++ {
 		if result.Attempts >= maxAttempts {
 			break
 		}
 
-		req := &Request{
+		req := &request{
 			MaxTokens: 4096,
 			System:    systemPrompt,
 			Messages:  messages,
@@ -288,7 +288,7 @@ func runEval(llm *Client, session *mcp.ClientSession, toolDefs []ToolDef, ec Cas
 		}
 
 		llmStart := time.Now()
-		resp, err := llm.SendRequest(context.Background(), req)
+		resp, err := llm.sendRequest(context.Background(), req)
 		result.LLMTime += time.Since(llmStart)
 		if err != nil {
 			break
@@ -297,10 +297,10 @@ func runEval(llm *Client, session *mcp.ClientSession, toolDefs []ToolDef, ec Cas
 		result.TokensIn += resp.Usage.InputTokens
 		result.TokensOut += resp.Usage.OutputTokens
 
-		messages = append(messages, ResponseToMessage(resp))
+		messages = append(messages, responseToMessage(resp))
 
 		// Find tool_use block.
-		var toolUse *ResponseContentBlock
+		var toolUse *responseContentBlock
 		for idx := range resp.Content {
 			if resp.Content[idx].Type == "tool_use" {
 				toolUse = &resp.Content[idx]
@@ -323,10 +323,10 @@ func runEval(llm *Client, session *mcp.ClientSession, toolDefs []ToolDef, ec Cas
 
 		if callErr != nil {
 			result.Outputs = append(result.Outputs, fmt.Sprintf("ERROR: %v", callErr))
-			messages = append(messages, Message{
+			messages = append(messages, message{
 				Role: "user",
 				Content: []map[string]any{
-					ToolResultBlock(toolUse.ID, callErr.Error(), true),
+					toolResultBlock(toolUse.ID, callErr.Error(), true),
 				},
 			})
 			continue
@@ -334,10 +334,10 @@ func runEval(llm *Client, session *mcp.ClientSession, toolDefs []ToolDef, ec Cas
 
 		if toolIsError {
 			result.Outputs = append(result.Outputs, fmt.Sprintf("ERROR: %s", output))
-			messages = append(messages, Message{
+			messages = append(messages, message{
 				Role: "user",
 				Content: []map[string]any{
-					ToolResultBlock(toolUse.ID, output, true),
+					toolResultBlock(toolUse.ID, output, true),
 				},
 			})
 			continue
@@ -345,7 +345,7 @@ func runEval(llm *Client, session *mcp.ClientSession, toolDefs []ToolDef, ec Cas
 
 		result.Outputs = append(result.Outputs, output)
 
-		if ec.Judge(output) {
+		if ec.judge(output) {
 			result.Passed = true
 			result.Score = 1.0 / math.Pow(2, float64(result.Attempts-1))
 			return result
@@ -353,11 +353,11 @@ func runEval(llm *Client, session *mcp.ClientSession, toolDefs []ToolDef, ec Cas
 
 		// Judge failed. If we still have attempts, send tool result + nudge.
 		if result.Attempts < maxAttempts {
-			messages = append(messages, Message{
+			messages = append(messages, message{
 				Role: "user",
 				Content: []map[string]any{
-					ToolResultBlock(toolUse.ID, output, false),
-					TextBlock("The output did not match the expected result. Please try again with a corrected program."),
+					toolResultBlock(toolUse.ID, output, false),
+					textBlock("The output did not match the expected result. Please try again with a corrected program."),
 				},
 			})
 		}
@@ -379,8 +379,8 @@ func printSummary(model string, results []evalResult) {
 	// Find the longest case name for column sizing.
 	nameWidth := 4 // minimum for "NAME"
 	for _, r := range results {
-		if len(r.Case.Name) > nameWidth {
-			nameWidth = len(r.Case.Name)
+		if len(r.ec.name) > nameWidth {
+			nameWidth = len(r.ec.name)
 		}
 	}
 
@@ -403,7 +403,7 @@ func printSummary(model string, results []evalResult) {
 	for tier := 1; tier <= 4; tier++ {
 		var tierResults []evalResult
 		for _, r := range results {
-			if r.Case.Tier == tier {
+			if r.ec.tier == tier {
 				tierResults = append(tierResults, r)
 			}
 		}
@@ -411,7 +411,7 @@ func printSummary(model string, results []evalResult) {
 			continue
 		}
 		sort.Slice(tierResults, func(a, b int) bool {
-			return tierResults[a].Case.Name < tierResults[b].Case.Name
+			return tierResults[a].ec.name < tierResults[b].ec.name
 		})
 
 		fmt.Printf("\n%s%sTIER %d: %s%s\n", colorBold, colorCyan, tier, tierNames[tier], colorReset)
@@ -431,7 +431,7 @@ func printSummary(model string, results []evalResult) {
 				color = colorRed
 			}
 			fmt.Printf(rowFmt,
-				color, mark, colorReset, r.Case.Name, colorDim, r.Attempts, r.Score, r.LLMTime.Round(time.Second), r.StarlarkTime.Round(time.Millisecond), colorReset)
+				color, mark, colorReset, r.ec.name, colorDim, r.Attempts, r.Score, r.LLMTime.Round(time.Second), r.StarlarkTime.Round(time.Millisecond), colorReset)
 			tierScore += r.Score
 			totalTokensIn += r.TokensIn
 			totalTokensOut += r.TokensOut

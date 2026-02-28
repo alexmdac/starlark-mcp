@@ -14,16 +14,16 @@ import (
 
 // Content block helpers using map[string]any to avoid JSON polymorphism issues.
 
-// TextBlock creates a text content block.
-func TextBlock(text string) map[string]any {
+// textBlock creates a text content block.
+func textBlock(text string) map[string]any {
 	return map[string]any{
 		"type": "text",
 		"text": text,
 	}
 }
 
-// ToolUseBlock creates a tool_use content block.
-func ToolUseBlock(id, name string, input map[string]any) map[string]any {
+// toolUseBlock creates a tool_use content block.
+func toolUseBlock(id, name string, input map[string]any) map[string]any {
 	return map[string]any{
 		"type":  "tool_use",
 		"id":    id,
@@ -32,8 +32,8 @@ func ToolUseBlock(id, name string, input map[string]any) map[string]any {
 	}
 }
 
-// ToolResultBlock creates a tool_result content block.
-func ToolResultBlock(toolUseID, content string, isError bool) map[string]any {
+// toolResultBlock creates a tool_result content block.
+func toolResultBlock(toolUseID, content string, isError bool) map[string]any {
 	b := map[string]any{
 		"type":        "tool_result",
 		"tool_use_id": toolUseID,
@@ -45,30 +45,30 @@ func ToolResultBlock(toolUseID, content string, isError bool) map[string]any {
 	return b
 }
 
-// Message represents a message in the conversation.
-type Message struct {
+// message represents a message in the conversation.
+type message struct {
 	Role    string           `json:"role"`
 	Content []map[string]any `json:"content"`
 }
 
-// ToolDef represents a tool definition for the API.
-type ToolDef struct {
+// toolDef represents a tool definition for the API.
+type toolDef struct {
 	Name        string         `json:"name"`
 	Description string         `json:"description"`
 	InputSchema map[string]any `json:"input_schema"`
 }
 
-// Request represents a request to the Anthropic Messages API.
-type Request struct {
+// request represents a request to the Anthropic Messages API.
+type request struct {
 	Model     string    `json:"model"`
 	MaxTokens int       `json:"max_tokens"`
 	System    string    `json:"system,omitempty"`
-	Messages  []Message `json:"messages"`
-	Tools     []ToolDef `json:"tools,omitempty"`
+	Messages  []message `json:"messages"`
+	Tools     []toolDef `json:"tools,omitempty"`
 }
 
-// ResponseContentBlock represents a content block in the API response.
-type ResponseContentBlock struct {
+// responseContentBlock represents a content block in the API response.
+type responseContentBlock struct {
 	Type  string          `json:"type"`
 	Text  string          `json:"text,omitempty"`
 	ID    string          `json:"id,omitempty"`
@@ -76,47 +76,47 @@ type ResponseContentBlock struct {
 	Input json.RawMessage `json:"input,omitempty"`
 }
 
-// ResponseUsage represents token usage in the API response.
-type ResponseUsage struct {
+// responseUsage represents token usage in the API response.
+type responseUsage struct {
 	InputTokens  int `json:"input_tokens"`
 	OutputTokens int `json:"output_tokens"`
 }
 
-// Response represents a response from the Anthropic Messages API.
-type Response struct {
+// response represents a response from the Anthropic Messages API.
+type response struct {
 	ID         string                 `json:"id"`
 	Type       string                 `json:"type"`
 	Role       string                 `json:"role"`
-	Content    []ResponseContentBlock `json:"content"`
+	Content    []responseContentBlock `json:"content"`
 	StopReason string                 `json:"stop_reason"`
-	Usage      ResponseUsage          `json:"usage"`
+	Usage      responseUsage          `json:"usage"`
 }
 
-// ResponseToMessage converts an API response into a Message suitable for
+// responseToMessage converts an API response into a message suitable for
 // appending to the conversation history.
-func ResponseToMessage(resp *Response) Message {
+func responseToMessage(resp *response) message {
 	blocks := make([]map[string]any, len(resp.Content))
 	for i, cb := range resp.Content {
 		switch cb.Type {
 		case "text":
-			blocks[i] = TextBlock(cb.Text)
+			blocks[i] = textBlock(cb.Text)
 		case "tool_use":
 			var input map[string]any
 			_ = json.Unmarshal(cb.Input, &input)
-			blocks[i] = ToolUseBlock(cb.ID, cb.Name, input)
+			blocks[i] = toolUseBlock(cb.ID, cb.Name, input)
 		default:
 			blocks[i] = map[string]any{"type": cb.Type}
 		}
 	}
-	return Message{
+	return message{
 		Role:    resp.Role,
 		Content: blocks,
 	}
 }
 
 
-// Client is a simple client for the Anthropic Messages API.
-type Client struct {
+// client is a simple client for the Anthropic Messages API.
+type client struct {
 	apiKey  string
 	model   string
 	baseURL string
@@ -124,9 +124,9 @@ type Client struct {
 	http    *http.Client
 }
 
-// NewClient creates a new LLM client.
-func NewClient(apiKey, model, baseURL string) *Client {
-	return &Client{
+// newClient creates a new LLM client.
+func newClient(apiKey, model, baseURL string) *client {
+	return &client{
 		apiKey:  apiKey,
 		model:   model,
 		baseURL: baseURL,
@@ -135,8 +135,8 @@ func NewClient(apiKey, model, baseURL string) *Client {
 	}
 }
 
-// SendRequest sends a request to the Anthropic Messages API.
-func (c *Client) SendRequest(ctx context.Context, req *Request) (*Response, error) {
+// sendRequest sends a request to the Anthropic Messages API.
+func (c *client) sendRequest(ctx context.Context, req *request) (*response, error) {
 	ctx, cancel := context.WithTimeout(ctx, c.timeout)
 	defer cancel()
 
@@ -170,7 +170,7 @@ func (c *Client) SendRequest(ctx context.Context, req *Request) (*Response, erro
 		return nil, fmt.Errorf("API error (status %d): %s", httpResp.StatusCode, string(respBody))
 	}
 
-	var apiResp Response
+	var apiResp response
 	if err := json.Unmarshal(respBody, &apiResp); err != nil {
 		return nil, fmt.Errorf("unmarshal response: %w", err)
 	}
