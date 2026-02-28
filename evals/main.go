@@ -1,3 +1,5 @@
+//go:build eval
+
 // Command eval runs the LLM eval harness against the Starlark MCP server.
 package main
 
@@ -10,12 +12,11 @@ import (
 	"strings"
 	"time"
 
-	"github.com/alexmdac/starlark-mcp/evals"
 	"github.com/alexmdac/starlark-mcp/server"
 )
 
 type evalResult struct {
-	Case      evals.Case
+	Case      Case
 	Passed    bool
 	Attempts  int
 	Score     float64
@@ -41,12 +42,12 @@ func main() {
 		baseURL = "https://api.anthropic.com"
 	}
 
-	client := evals.NewClient(apiKey, model, baseURL)
+	client := NewClient(apiKey, model, baseURL)
 
-	results := make([]evalResult, len(evals.Cases))
+	results := make([]evalResult, len(Cases))
 
 	// Run cases sequentially (simple; parallelism can be added later with goroutines).
-	for i, ec := range evals.Cases {
+	for i, ec := range Cases {
 		fmt.Fprintf(os.Stderr, "Running %s...\n", ec.Name)
 		results[i] = runEval(client, ec)
 		mark := "\u2717"
@@ -59,7 +60,7 @@ func main() {
 	printSummary(model, results)
 }
 
-func runEval(client *evals.Client, ec evals.Case) evalResult {
+func runEval(client *Client, ec Case) evalResult {
 	const maxAttempts = 3
 	const maxIterations = 6
 
@@ -69,7 +70,7 @@ func runEval(client *evals.Client, ec evals.Case) evalResult {
 		"\n\nThe following documentation describes the built-in functions available:\n\n" +
 		server.BuiltinsDocumentation
 
-	toolDef := evals.ToolDef{
+	toolDef := ToolDef{
 		Name:        "execute-starlark",
 		Description: server.ExecuteStarlarkDescription,
 		InputSchema: map[string]any{
@@ -86,10 +87,10 @@ func runEval(client *evals.Client, ec evals.Case) evalResult {
 		},
 	}
 
-	messages := []evals.Message{
+	messages := []Message{
 		{
 			Role:    "user",
-			Content: []map[string]any{evals.TextBlock(ec.Prompt)},
+			Content: []map[string]any{TextBlock(ec.Prompt)},
 		},
 	}
 
@@ -102,11 +103,11 @@ func runEval(client *evals.Client, ec evals.Case) evalResult {
 			break
 		}
 
-		req := &evals.Request{
+		req := &Request{
 			MaxTokens: 4096,
 			System:    systemPrompt,
 			Messages:  messages,
-			Tools:     []evals.ToolDef{toolDef},
+			Tools:     []ToolDef{toolDef},
 		}
 
 		resp, err := client.SendRequest(context.Background(), req)
@@ -119,10 +120,10 @@ func runEval(client *evals.Client, ec evals.Case) evalResult {
 		result.TokensOut += resp.Usage.OutputTokens
 
 		// Append assistant message to conversation.
-		messages = append(messages, evals.ResponseToMessage(resp))
+		messages = append(messages, ResponseToMessage(resp))
 
 		// Find tool_use block.
-		var toolUse *evals.ResponseContentBlock
+		var toolUse *ResponseContentBlock
 		for idx := range resp.Content {
 			if resp.Content[idx].Type == "tool_use" {
 				toolUse = &resp.Content[idx]
@@ -132,15 +133,15 @@ func runEval(client *evals.Client, ec evals.Case) evalResult {
 
 		if toolUse == nil {
 			// No tool use, nudge the model.
-			messages = append(messages, evals.Message{
+			messages = append(messages, Message{
 				Role:    "user",
-				Content: []map[string]any{evals.TextBlock("Please use the execute-starlark tool.")},
+				Content: []map[string]any{TextBlock("Please use the execute-starlark tool.")},
 			})
 			continue
 		}
 
 		// Parse tool input.
-		var input evals.ToolInput
+		var input ToolInput
 		if err := json.Unmarshal(toolUse.Input, &input); err != nil {
 			fmt.Fprintf(os.Stderr, "failed to parse tool input for %s: %v\n", ec.Name, err)
 			break
@@ -155,10 +156,10 @@ func runEval(client *evals.Client, ec evals.Case) evalResult {
 
 		if execErr != nil {
 			result.Outputs = append(result.Outputs, fmt.Sprintf("ERROR: %v", execErr))
-			messages = append(messages, evals.Message{
+			messages = append(messages, Message{
 				Role: "user",
 				Content: []map[string]any{
-					evals.ToolResultBlock(toolUse.ID, execErr.Error(), true),
+					ToolResultBlock(toolUse.ID, execErr.Error(), true),
 				},
 			})
 			continue
@@ -174,11 +175,11 @@ func runEval(client *evals.Client, ec evals.Case) evalResult {
 
 		// Judge failed. If we still have attempts, send tool result + nudge.
 		if result.Attempts < maxAttempts {
-			messages = append(messages, evals.Message{
+			messages = append(messages, Message{
 				Role: "user",
 				Content: []map[string]any{
-					evals.ToolResultBlock(toolUse.ID, output, false),
-					evals.TextBlock("The output did not match the expected result. Please try again with a corrected program."),
+					ToolResultBlock(toolUse.ID, output, false),
+					TextBlock("The output did not match the expected result. Please try again with a corrected program."),
 				},
 			})
 		}

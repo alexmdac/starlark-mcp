@@ -1,4 +1,6 @@
-package evals
+//go:build eval
+
+package main
 
 import (
 	"bytes"
