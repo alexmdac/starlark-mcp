@@ -8,6 +8,20 @@ import (
 	"strings"
 )
 
+// maxTier is the number of difficulty tiers. When adding a new tier, bump this
+// and add the label to tierNames and cases to the cases slice below.
+const maxTier = 6
+
+// tierNames maps tier numbers to their display labels.
+var tierNames = map[int]string{
+	1: "BASICS",
+	2: "SIMPLE ALGORITHMS",
+	3: "INTERMEDIATE",
+	4: "HARD",
+	5: "EXPERT",
+	6: "CHALLENGING",
+}
+
 // evalCase describes a single eval case: a prompt for the LLM and a judge function.
 type evalCase struct {
 	name   string
