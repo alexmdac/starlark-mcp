@@ -9,6 +9,7 @@ import (
 	"fmt"
 	"math"
 	"os"
+	"sort"
 	"strings"
 	"sync"
 	"time"
@@ -25,6 +26,7 @@ type evalResult struct {
 	Outputs   []string // starlark output from each attempt
 	TokensIn  int
 	TokensOut int
+	Duration  time.Duration
 }
 
 func main() {
@@ -77,7 +79,8 @@ func main() {
 			}
 
 			results[i] = runEval(llm, session, toolDefs, ec)
-			disp.finish(i, results[i].Passed, results[i].Attempts, time.Since(disp.startTimes[i]))
+			results[i].Duration = time.Since(disp.startTimes[i])
+			disp.finish(i, results[i].Passed, results[i].Attempts, results[i].Duration)
 		}()
 	}
 	wg.Wait()
@@ -90,6 +93,7 @@ func main() {
 type display struct {
 	mu         sync.Mutex
 	cases      []Case
+	sorted     []int // indices into cases, sorted lexicographically
 	startTimes []time.Time
 	done       []bool
 	passed     []bool
@@ -100,8 +104,16 @@ type display struct {
 
 func newDisplay(cases []Case) *display {
 	now := time.Now()
+	sorted := make([]int, len(cases))
+	for i := range sorted {
+		sorted[i] = i
+	}
+	sort.Slice(sorted, func(a, b int) bool {
+		return cases[sorted[a]].Name < cases[sorted[b]].Name
+	})
 	d := &display{
 		cases:      cases,
+		sorted:     sorted,
 		startTimes: make([]time.Time, len(cases)),
 		done:       make([]bool, len(cases)),
 		passed:     make([]bool, len(cases)),
@@ -171,7 +183,8 @@ func (d *display) render() {
 
 	now := time.Now()
 	frame := int(now.UnixMilli()/80) % len(spinnerFrames)
-	for i, c := range d.cases {
+	for _, i := range d.sorted {
+		c := d.cases[i]
 		// Clear line and write status.
 		fmt.Fprintf(os.Stderr, "\033[2K")
 		if d.done[i] {
@@ -184,8 +197,8 @@ func (d *display) render() {
 			}
 		} else {
 			elapsed := now.Sub(d.startTimes[i])
-			fmt.Fprintf(os.Stderr, "  %s%s %s%s %s(%.1fs)%s\n",
-				colorYellow, spinnerFrames[frame], c.Name, colorReset, colorDim, elapsed.Seconds(), colorReset)
+			fmt.Fprintf(os.Stderr, "  %s%s %s%s %s[T%d] (%.1fs)%s\n",
+				colorYellow, spinnerFrames[frame], c.Name, colorReset, colorDim, c.Tier, elapsed.Seconds(), colorReset)
 		}
 	}
 }
@@ -399,8 +412,8 @@ func printSummary(model string, results []evalResult) {
 			if padding < 1 {
 				padding = 1
 			}
-			fmt.Printf("  %s%s%s %s%s%sattempts: %d  score: %.2f%s\n",
-				color, mark, colorReset, name, strings.Repeat(" ", padding), colorDim, r.Attempts, r.Score, colorReset)
+			fmt.Printf("  %s%s%s %s%s%sattempts: %d  score: %.2f  %.1fs%s\n",
+				color, mark, colorReset, name, strings.Repeat(" ", padding), colorDim, r.Attempts, r.Score, r.Duration.Seconds(), colorReset)
 			tierScore += r.Score
 			totalTokensIn += r.TokensIn
 			totalTokensOut += r.TokensOut
