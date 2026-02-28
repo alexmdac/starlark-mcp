@@ -6,6 +6,7 @@ package main
 import (
 	"context"
 	"encoding/json"
+	"flag"
 	"fmt"
 	"math"
 	"os"
@@ -31,20 +32,27 @@ type evalResult struct {
 	StarlarkTime time.Duration
 }
 
+// caseResults holds all runs for a single eval case.
+type caseResults struct {
+	ec   evalCase
+	Runs []evalResult
+}
+
 func main() {
+	runsFlag := flag.Int("runs", 5, "number of independent runs per eval case")
+	llmFlag := flag.String("llm", "claude-sonnet-4-6", "model name to use")
+	llmURLFlag := flag.String("llm-url", "http://169.254.169.254/gateway/llm/anthropic", "base URL for the Anthropic API")
+	flag.Parse()
+	numRuns := *runsFlag
+	if numRuns < 1 {
+		numRuns = 1
+	}
+	model := *llmFlag
+	baseURL := *llmURLFlag
+
 	apiKey := os.Getenv("ANTHROPIC_API_KEY")
 	if apiKey == "" {
 		apiKey = "unspecified"
-	}
-
-	model := os.Getenv("EVAL_MODEL")
-	if model == "" {
-		model = "claude-sonnet-4-6"
-	}
-
-	baseURL := os.Getenv("ANTHROPIC_BASE_URL")
-	if baseURL == "" {
-		baseURL = "http://169.254.169.254/gateway/llm/anthropic"
 	}
 
 	ctx, cancel := signal.NotifyContext(context.Background(), os.Interrupt)
@@ -56,50 +64,59 @@ func main() {
 	const maxConcurrent = 8
 	sem := make(chan struct{}, maxConcurrent)
 
-	disp := newDisplay(cases)
-	results := make([]evalResult, len(cases))
+	disp := newDisplay(cases, numRuns)
+	allResults := make([]caseResults, len(cases))
+	for i := range allResults {
+		allResults[i] = caseResults{
+			ec:   cases[i],
+			Runs: make([]evalResult, numRuns),
+		}
+	}
+
 	var wg sync.WaitGroup
 	for i, ec := range cases {
-		wg.Add(1)
-		go func() {
-			defer wg.Done()
-			sem <- struct{}{}
-			defer func() { <-sem }()
+		for r := range numRuns {
+			wg.Add(1)
+			go func() {
+				defer wg.Done()
+				sem <- struct{}{}
+				defer func() { <-sem }()
 
-			// Each eval gets its own MCP session for isolation.
-			t1, t2 := mcp.NewInMemoryTransports()
-			srv := server.New()
-			mcpClient := mcp.NewClient(&mcp.Implementation{Name: "eval-client"}, nil)
-
-			if _, err := srv.Connect(ctx, t1, nil); err != nil {
-				results[i] = evalResult{ec: ec}
-				disp.finish(i, false, 0, 0)
-				return
-			}
-			session, err := mcpClient.Connect(ctx, t2, nil)
-			if err != nil {
-				results[i] = evalResult{ec: ec}
-				disp.finish(i, false, 0, 0)
-				return
-			}
-			defer session.Close()
-
-			toolDefs, err := mcpToolDefs(ctx, session)
-			if err != nil {
-				results[i] = evalResult{ec: ec}
-				disp.finish(i, false, 0, 0)
-				return
-			}
-
-			results[i] = runEval(ctx, llm, session, toolDefs, ec)
-			results[i].Duration = time.Since(disp.startTimes[i])
-			disp.finish(i, results[i].Passed, results[i].Attempts, results[i].Duration)
-		}()
+				start := time.Now()
+				res := runSingleEval(ctx, llm, ec)
+				res.Duration = time.Since(start)
+				allResults[i].Runs[r] = res
+				disp.finishRun(i, res.Passed, res.Duration)
+			}()
+		}
 	}
 	wg.Wait()
 	disp.stop()
 
-	printSummary(model, results)
+	printSummary(model, numRuns, allResults)
+}
+
+// runSingleEval sets up an isolated MCP session and runs a single eval case.
+func runSingleEval(ctx context.Context, llm *client, ec evalCase) evalResult {
+	t1, t2 := mcp.NewInMemoryTransports()
+	srv := server.New()
+	mcpClient := mcp.NewClient(&mcp.Implementation{Name: "eval-client"}, nil)
+
+	if _, err := srv.Connect(ctx, t1, nil); err != nil {
+		return evalResult{ec: ec}
+	}
+	session, err := mcpClient.Connect(ctx, t2, nil)
+	if err != nil {
+		return evalResult{ec: ec}
+	}
+	defer session.Close()
+
+	toolDefs, err := mcpToolDefs(ctx, session)
+	if err != nil {
+		return evalResult{ec: ec}
+	}
+
+	return runEval(ctx, llm, session, toolDefs, ec)
 }
 
 // mcpToolDefs calls ListTools on the MCP session and converts the results

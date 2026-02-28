@@ -13,18 +13,18 @@ import (
 
 // display manages live terminal output for eval progress.
 type display struct {
-	mu         sync.Mutex
-	cases      []evalCase
-	sorted     []int // indices into cases, sorted lexicographically
-	startTimes []time.Time
-	done       []bool
-	passed     []bool
-	attempts   []int
-	durations  []time.Duration
-	stopCh     chan struct{}
+	mu           sync.Mutex
+	cases        []evalCase
+	sorted       []int // indices into cases, sorted lexicographically
+	startTimes   []time.Time
+	numRuns      int
+	runsDone     []int
+	runsPassed   []int
+	runDurations [][]time.Duration
+	stopCh       chan struct{}
 }
 
-func newDisplay(cs []evalCase) *display {
+func newDisplay(cs []evalCase, numRuns int) *display {
 	now := time.Now()
 	sorted := make([]int, len(cs))
 	for i := range sorted {
@@ -34,14 +34,14 @@ func newDisplay(cs []evalCase) *display {
 		return cs[sorted[a]].name < cs[sorted[b]].name
 	})
 	d := &display{
-		cases:      cs,
-		sorted:     sorted,
-		startTimes: make([]time.Time, len(cs)),
-		done:       make([]bool, len(cs)),
-		passed:     make([]bool, len(cs)),
-		attempts:   make([]int, len(cs)),
-		durations:  make([]time.Duration, len(cs)),
-		stopCh:     make(chan struct{}),
+		cases:        cs,
+		sorted:       sorted,
+		startTimes:   make([]time.Time, len(cs)),
+		numRuns:      numRuns,
+		runsDone:     make([]int, len(cs)),
+		runsPassed:   make([]int, len(cs)),
+		runDurations: make([][]time.Duration, len(cs)),
+		stopCh:       make(chan struct{}),
 	}
 	for i := range cs {
 		d.startTimes[i] = now
@@ -68,12 +68,13 @@ func (d *display) loop() {
 	}
 }
 
-func (d *display) finish(i int, passed bool, attempts int, dur time.Duration) {
+func (d *display) finishRun(i int, passed bool, dur time.Duration) {
 	d.mu.Lock()
-	d.done[i] = true
-	d.passed[i] = passed
-	d.attempts[i] = attempts
-	d.durations[i] = dur
+	d.runsDone[i]++
+	if passed {
+		d.runsPassed[i]++
+	}
+	d.runDurations[i] = append(d.runDurations[i], dur)
 	d.mu.Unlock()
 	d.render()
 }
@@ -107,124 +108,191 @@ func (d *display) render() {
 	frame := int(now.UnixMilli()/80) % len(spinnerFrames)
 	for _, i := range d.sorted {
 		c := d.cases[i]
-		// Clear line and write status.
-		fmt.Fprintf(os.Stderr, "\033[2K")
-		if d.done[i] {
-			if d.passed[i] {
-				fmt.Fprintf(os.Stderr, "  %s✔ %s%s %s(%s, %d attempts)%s\n",
-					colorGreen, c.name, colorReset, colorDim, d.durations[i].Round(time.Millisecond), d.attempts[i], colorReset)
-			} else {
-				fmt.Fprintf(os.Stderr, "  %s✘ %s%s %s(%s, %d attempts)%s\n",
-					colorRed, c.name, colorReset, colorDim, d.durations[i].Round(time.Millisecond), d.attempts[i], colorReset)
+		fmt.Fprintf(os.Stderr, "\033[2K") // clear line
+
+		done := d.runsDone[i]
+		passed := d.runsPassed[i]
+		total := d.numRuns
+
+		if done >= total {
+			// Finished — compute avg/min/max duration.
+			durs := d.runDurations[i]
+			var sum time.Duration
+			minD, maxD := durs[0], durs[0]
+			for _, dur := range durs {
+				sum += dur
+				if dur < minD {
+					minD = dur
+				}
+				if dur > maxD {
+					maxD = dur
+				}
 			}
+			avgD := sum / time.Duration(len(durs))
+			color := colorGreen
+			mark := "✔"
+			if passed == 0 {
+				color = colorRed
+				mark = "✘"
+			} else if passed < total {
+				color = colorYellow
+				mark = "◑"
+			}
+			fmt.Fprintf(os.Stderr, "  %s%s %s%s %s(%d/%d passed, avg %s, min %s, max %s)%s\n",
+				color, mark, c.name, colorReset, colorDim, passed, total,
+				avgD.Round(time.Millisecond), minD.Round(time.Millisecond), maxD.Round(time.Millisecond), colorReset)
 		} else {
+			// In progress.
 			elapsed := now.Sub(d.startTimes[i]).Round(time.Second)
-			fmt.Fprintf(os.Stderr, "  %s%s %s%s %s(%s)%s\n",
-				colorYellow, spinnerFrames[frame], c.name, colorReset, colorDim, elapsed, colorReset)
+			fmt.Fprintf(os.Stderr, "  %s%s %s%s %s(%d/%d done, %s)%s\n",
+				colorYellow, spinnerFrames[frame], c.name, colorReset, colorDim, done, total, elapsed, colorReset)
 		}
 	}
 }
 
-func printSummary(model string, results []evalResult) {
+func printSummary(model string, numRuns int, results []caseResults) {
 
 	// Find the longest case name for column sizing.
 	nameWidth := 4 // minimum for "NAME"
-	for _, r := range results {
-		if len(r.ec.name) > nameWidth {
-			nameWidth = len(r.ec.name)
+	for _, cr := range results {
+		if len(cr.ec.name) > nameWidth {
+			nameWidth = len(cr.ec.name)
 		}
 	}
 
-	//  " ✔ %-Ns  %5s  %5s  %7s  %8s"
-	tableWidth := 3 + nameWidth + 2 + 5 + 2 + 5 + 2 + 10 + 2 + 10
-	headerFmt := fmt.Sprintf("%%s   %%-%ds  %%5s  %%5s  %%10s  %%10s%%s\n", nameWidth)
-	rowFmt := fmt.Sprintf(" %%s%%s%%s %%-%ds  %%s%%5d  %%5.2f  %%10s  %%10s%%s\n", nameWidth)
+	printSummaryTable(model, numRuns, nameWidth, results)
+}
+
+func printSummaryTable(model string, numRuns int, nameWidth int, results []caseResults) {
+	// Columns: mark NAME  PASS_RATE  AVG_SCORE  AVG_TRIES  TOKENS
+	passColW := 9 // "5/5 100%"
+	tableWidth := 3 + nameWidth + 2 + passColW + 2 + 9 + 2 + 9 + 2 + 15
+	headerFmt := fmt.Sprintf("%%s   %%-%ds  %%-%ds  %%9s  %%9s  %%15s%%s\n", nameWidth, passColW)
+	rowFmt := fmt.Sprintf(" %%s%%s%%s %%-%ds  %%s%%-%ds  %%9.2f  %%9.1f  %%6d / %%6d%%s\n", nameWidth, passColW)
 
 	fmt.Printf("\n%s%s%s\n", colorCyan, strings.Repeat("═", tableWidth), colorReset)
-	fmt.Printf("%s%sEVAL RESULTS — model: %s%s\n", colorBold, colorCyan, model, colorReset)
+	fmt.Printf("%s%sEVAL RESULTS — model: %s, %d runs per case%s\n", colorBold, colorCyan, model, numRuns, colorReset)
 	fmt.Printf("%s%s%s\n", colorCyan, strings.Repeat("═", tableWidth), colorReset)
-	fmt.Printf(headerFmt, colorDim, "NAME", "TRIES", "SCORE", "LLM", "STARLARK", colorReset)
+	fmt.Printf(headerFmt, colorDim, "NAME", "PASS RATE", "AVG SCORE", "AVG TRIES", "TOKENS IN/OUT", colorReset)
 
 	totalPassed := 0
-	totalCases := 0
+	totalRuns := 0
 	totalScore := 0.0
 	totalTokensIn := 0
 	totalTokensOut := 0
 
 	for tier := 1; tier <= maxTier; tier++ {
-		var tierResults []evalResult
-		for _, r := range results {
-			if r.ec.tier == tier {
-				tierResults = append(tierResults, r)
+		var tierCases []caseResults
+		for _, cr := range results {
+			if cr.ec.tier == tier {
+				tierCases = append(tierCases, cr)
 			}
 		}
-		if len(tierResults) == 0 {
+		if len(tierCases) == 0 {
 			continue
 		}
-		sort.Slice(tierResults, func(a, b int) bool {
-			return tierResults[a].ec.name < tierResults[b].ec.name
+		sort.Slice(tierCases, func(a, b int) bool {
+			return tierCases[a].ec.name < tierCases[b].ec.name
 		})
 
 		fmt.Printf("\n%s%sTIER %d: %s%s\n", colorBold, colorCyan, tier, tierNames[tier], colorReset)
 
 		tierPassed := 0
-		tierTotal := len(tierResults)
+		tierRuns := 0
 		tierScore := 0.0
 
-		for _, r := range tierResults {
+		for _, cr := range tierCases {
+			passed := 0
+			scoreSum := 0.0
+			attemptsSum := 0
+			tokensIn := 0
+			tokensOut := 0
+			for _, r := range cr.Runs {
+				if r.Passed {
+					passed++
+				}
+				scoreSum += r.Score
+				attemptsSum += r.Attempts
+				tokensIn += r.TokensIn
+				tokensOut += r.TokensOut
+			}
+			n := len(cr.Runs)
+			avgScore := scoreSum / float64(n)
+			avgAttempts := float64(attemptsSum) / float64(n)
+			passRate := float64(passed) / float64(n) * 100
+
 			var mark, color string
-			if r.Passed {
+			if passed == n {
 				mark = "✔"
 				color = colorGreen
-				tierPassed++
-			} else {
+			} else if passed == 0 {
 				mark = "✘"
 				color = colorRed
+			} else {
+				mark = "◑"
+				color = colorYellow
 			}
+
+			passStr := fmt.Sprintf("%d/%d %3.0f%%", passed, n, passRate)
+
 			fmt.Printf(rowFmt,
-				color, mark, colorReset, r.ec.name, colorDim, r.Attempts, r.Score, r.LLMTime.Round(time.Second), r.StarlarkTime.Round(time.Millisecond), colorReset)
-			tierScore += r.Score
-			totalTokensIn += r.TokensIn
-			totalTokensOut += r.TokensOut
+				color, mark, colorReset, cr.ec.name, colorDim,
+				passStr, avgScore, avgAttempts, tokensIn, tokensOut, colorReset)
+
+			tierPassed += passed
+			tierRuns += n
+			tierScore += scoreSum
+			totalTokensIn += tokensIn
+			totalTokensOut += tokensOut
 		}
 
-		fmt.Printf("   %sTier score: %.2f (%d/%d passed)%s\n",
-			colorDim, tierScore/float64(tierTotal), tierPassed, tierTotal, colorReset)
+		tierPassRate := float64(tierPassed) / float64(tierRuns) * 100
+		fmt.Printf("   %sTier: %.2f avg score, %d/%d runs passed (%.0f%%)%s\n",
+			colorDim, tierScore/float64(tierRuns), tierPassed, tierRuns, tierPassRate, colorReset)
 
 		totalPassed += tierPassed
-		totalCases += tierTotal
+		totalRuns += tierRuns
 		totalScore += tierScore
 	}
 
+	overallPassRate := float64(totalPassed) / float64(totalRuns) * 100
 	fmt.Printf("\n%s%s%s\n", colorCyan, strings.Repeat("─", tableWidth), colorReset)
-	fmt.Printf("%s%sOVERALL: %.2f (%d/%d passed)  tokens: %d in, %d out%s\n",
-		colorBold, colorCyan, totalScore/float64(totalCases), totalPassed, totalCases, totalTokensIn, totalTokensOut, colorReset)
+	fmt.Printf("%s%sOVERALL: %.2f avg score, %d/%d runs passed (%.0f%%)  tokens: %d in, %d out%s\n",
+		colorBold, colorCyan, totalScore/float64(totalRuns), totalPassed, totalRuns, overallPassRate, totalTokensIn, totalTokensOut, colorReset)
 	fmt.Printf("%s%s%s\n", colorCyan, strings.Repeat("─", tableWidth), colorReset)
 
-	// Print details for all failed attempts, including intermediate
-	// failures on cases that eventually passed.
-	for _, r := range results {
-		if len(r.Outputs) == 0 {
+	// Print failed run details for cases that didn't pass every run.
+	for _, cr := range results {
+		type failedRun struct {
+			index int
+			r     evalResult
+		}
+		var failed []failedRun
+		for ri, r := range cr.Runs {
+			if !r.Passed {
+				failed = append(failed, failedRun{ri, r})
+			}
+		}
+		if len(failed) == 0 {
 			continue
 		}
 
-		// Determine which attempts failed. For a passing case the last
-		// attempt succeeded; for a failing case every attempt failed.
-		failedCount := len(r.Outputs)
-		if r.Passed {
-			failedCount-- // last attempt was the successful one
-		}
-		if failedCount == 0 {
-			continue
-		}
-
-		if r.Passed {
-			fmt.Printf("\n%s%sFAILED ATTEMPTS (eventually passed): %s%s\n", colorBold, colorYellow, r.ec.name, colorReset)
+		passedCount := len(cr.Runs) - len(failed)
+		if passedCount > 0 {
+			fmt.Printf("\n%s%sFAILED RUNS (%d/%d failed): %s%s\n",
+				colorBold, colorYellow, len(failed), len(cr.Runs), cr.ec.name, colorReset)
 		} else {
-			fmt.Printf("\n%s%sFAILED: %s%s\n", colorBold, colorRed, r.ec.name, colorReset)
+			fmt.Printf("\n%s%sFAILED (all %d runs): %s%s\n",
+				colorBold, colorRed, len(cr.Runs), cr.ec.name, colorReset)
 		}
-		for i := 0; i < failedCount; i++ {
-			fmt.Printf("%sAttempt %d:%s\n%s\n", colorDim, i+1, colorReset, r.Outputs[i])
+		for _, f := range failed {
+			if len(f.r.Outputs) == 0 {
+				fmt.Printf("%sRun %d: no output%s\n", colorDim, f.index+1, colorReset)
+				continue
+			}
+			for ai, out := range f.r.Outputs {
+				fmt.Printf("%sRun %d, attempt %d:%s\n%s\n", colorDim, f.index+1, ai+1, colorReset, out)
+			}
 		}
 	}
 }

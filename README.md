@@ -74,20 +74,28 @@ task --list
 ### Evals
 
 The project includes an LLM eval harness that measures how effectively models
-use the `execute_starlark` tool. It runs 36 test cases across 6 difficulty tiers
-and produces a scored summary.
+use the `execute_starlark` tool. It runs 36 test cases across 6 difficulty tiers,
+executing each case multiple times to measure reliability, and produces a scored
+summary with pass rates.
 
 ```sh
 task eval
 ```
 
-Configuration via environment variables:
+Flags can be passed after `--`:
 
-| Variable | Default | Description |
-|----------|---------|-------------|
-| `EVAL_MODEL` | `claude-sonnet-4-6` | Model to evaluate |
-| `ANTHROPIC_API_KEY` | `unspecified` | API key (optional with gateway) |
-| `ANTHROPIC_BASE_URL` | `http://169.254.169.254/gateway/llm/anthropic` | API endpoint ([exe.dev LLM gateway](https://exe.dev/docs/shelley/llm-gateway)) |
+```sh
+task eval -- -runs 10 -llm claude-sonnet-4-6
+```
+
+| Flag | Default | Description |
+|------|---------|-------------|
+| `-runs` | `5` | Number of independent runs per eval case |
+| `-llm` | `claude-sonnet-4-6` | Model to evaluate |
+| `-llm-url` | `http://169.254.169.254/gateway/llm/anthropic` | API endpoint ([exe.dev LLM gateway](https://exe.dev/docs/shelley/llm-gateway)) |
+
+The `ANTHROPIC_API_KEY` environment variable provides the API key (optional when
+using the exe.dev gateway).
 
 ## License
 
