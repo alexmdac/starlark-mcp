@@ -11,10 +11,12 @@ import (
 	"strings"
 	"testing"
 	"time"
+
+	"github.com/alexmdac/starlark-mcp/evals"
 )
 
 type evalResult struct {
-	Case      evalCase
+	Case      evals.Case
 	Passed    bool
 	Attempts  int
 	Score     float64
@@ -36,12 +38,12 @@ func TestEval(t *testing.T) {
 		baseURL = "https://api.anthropic.com"
 	}
 
-	client := newLLMClient(apiKey, model, baseURL)
+	client := evals.NewClient(apiKey, model, baseURL)
 
-	results := make([]evalResult, len(evalCases))
+	results := make([]evalResult, len(evals.Cases))
 
 	t.Run("cases", func(t *testing.T) {
-		for i, ec := range evalCases {
+		for i, ec := range evals.Cases {
 			ec := ec
 			i := i
 			t.Run(ec.Name, func(t *testing.T) {
@@ -62,7 +64,7 @@ func TestEval(t *testing.T) {
 	printSummary(t, model, results)
 }
 
-func runEval(t *testing.T, client *llmClient, ec evalCase) evalResult {
+func runEval(t *testing.T, client *evals.Client, ec evals.Case) evalResult {
 	t.Helper()
 
 	const maxAttempts = 3
@@ -70,11 +72,11 @@ func runEval(t *testing.T, client *llmClient, ec evalCase) evalResult {
 
 	systemPrompt := "You are solving a programming task using the execute-starlark tool. " +
 		"Use the tool to write and run a Starlark program that produces the requested output. " +
-		"Do not explain your work — just call the tool." +
+		"Do not explain your work \u2014 just call the tool." +
 		"\n\nThe following documentation describes the built-in functions available:\n\n" +
 		builtinsDocumentation
 
-	toolDef := apiToolDef{
+	toolDef := evals.ToolDef{
 		Name:        "execute-starlark",
 		Description: executeStarlarkDescription,
 		InputSchema: map[string]any{
@@ -91,10 +93,10 @@ func runEval(t *testing.T, client *llmClient, ec evalCase) evalResult {
 		},
 	}
 
-	messages := []apiMessage{
+	messages := []evals.Message{
 		{
 			Role:    "user",
-			Content: []map[string]any{textBlock(ec.Prompt)},
+			Content: []map[string]any{evals.TextBlock(ec.Prompt)},
 		},
 	}
 
@@ -107,15 +109,15 @@ func runEval(t *testing.T, client *llmClient, ec evalCase) evalResult {
 			break
 		}
 
-		req := &apiRequest{
+		req := &evals.Request{
 			MaxTokens: 4096,
 			System:    systemPrompt,
 			Messages:  messages,
-			Tools:     []apiToolDef{toolDef},
+			Tools:     []evals.ToolDef{toolDef},
 		}
 
 		ctx, cancel := context.WithTimeout(context.Background(), 120*time.Second)
-		resp, err := client.sendRequest(ctx, req)
+		resp, err := client.SendRequest(ctx, req)
 		cancel()
 		if err != nil {
 			t.Fatalf("API request failed: %v", err)
@@ -125,10 +127,10 @@ func runEval(t *testing.T, client *llmClient, ec evalCase) evalResult {
 		result.TokensOut += resp.Usage.OutputTokens
 
 		// Append assistant message to conversation.
-		messages = append(messages, responseToMessage(resp))
+		messages = append(messages, evals.ResponseToMessage(resp))
 
 		// Find tool_use block.
-		var toolUse *apiResponseContentBlock
+		var toolUse *evals.ResponseContentBlock
 		for idx := range resp.Content {
 			if resp.Content[idx].Type == "tool_use" {
 				toolUse = &resp.Content[idx]
@@ -138,15 +140,15 @@ func runEval(t *testing.T, client *llmClient, ec evalCase) evalResult {
 
 		if toolUse == nil {
 			// No tool use, nudge the model.
-			messages = append(messages, apiMessage{
+			messages = append(messages, evals.Message{
 				Role:    "user",
-				Content: []map[string]any{textBlock("Please use the execute-starlark tool.")},
+				Content: []map[string]any{evals.TextBlock("Please use the execute-starlark tool.")},
 			})
 			continue
 		}
 
 		// Parse tool input.
-		var input toolInput
+		var input evals.ToolInput
 		if err := json.Unmarshal(toolUse.Input, &input); err != nil {
 			t.Fatalf("failed to parse tool input: %v", err)
 		}
@@ -161,10 +163,10 @@ func runEval(t *testing.T, client *llmClient, ec evalCase) evalResult {
 		if execErr != nil {
 			result.Outputs = append(result.Outputs, fmt.Sprintf("ERROR: %v", execErr))
 			// Append error tool result.
-			messages = append(messages, apiMessage{
+			messages = append(messages, evals.Message{
 				Role: "user",
 				Content: []map[string]any{
-					toolResultBlock(toolUse.ID, execErr.Error(), true),
+					evals.ToolResultBlock(toolUse.ID, execErr.Error(), true),
 				},
 			})
 			continue
@@ -180,11 +182,11 @@ func runEval(t *testing.T, client *llmClient, ec evalCase) evalResult {
 
 		// Judge failed. If we still have attempts, send tool result + nudge.
 		if result.Attempts < maxAttempts {
-			messages = append(messages, apiMessage{
+			messages = append(messages, evals.Message{
 				Role: "user",
 				Content: []map[string]any{
-					toolResultBlock(toolUse.ID, output, false),
-					textBlock("The output did not match the expected result. Please try again with a corrected program."),
+					evals.ToolResultBlock(toolUse.ID, output, false),
+					evals.TextBlock("The output did not match the expected result. Please try again with a corrected program."),
 				},
 			})
 		}

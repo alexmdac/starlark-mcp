@@ -1,6 +1,6 @@
 //go:build eval
 
-package main
+package evals
 
 import (
 	"bytes"
@@ -13,14 +13,16 @@ import (
 
 // Content block helpers using map[string]any to avoid JSON polymorphism issues.
 
-func textBlock(text string) map[string]any {
+// TextBlock creates a text content block.
+func TextBlock(text string) map[string]any {
 	return map[string]any{
 		"type": "text",
 		"text": text,
 	}
 }
 
-func toolUseBlock(id, name string, input map[string]any) map[string]any {
+// ToolUseBlock creates a tool_use content block.
+func ToolUseBlock(id, name string, input map[string]any) map[string]any {
 	return map[string]any{
 		"type":  "tool_use",
 		"id":    id,
@@ -29,7 +31,8 @@ func toolUseBlock(id, name string, input map[string]any) map[string]any {
 	}
 }
 
-func toolResultBlock(toolUseID, content string, isError bool) map[string]any {
+// ToolResultBlock creates a tool_result content block.
+func ToolResultBlock(toolUseID, content string, isError bool) map[string]any {
 	b := map[string]any{
 		"type":        "tool_result",
 		"tool_use_id": toolUseID,
@@ -41,30 +44,30 @@ func toolResultBlock(toolUseID, content string, isError bool) map[string]any {
 	return b
 }
 
-// apiMessage represents a message in the conversation.
-type apiMessage struct {
+// Message represents a message in the conversation.
+type Message struct {
 	Role    string           `json:"role"`
 	Content []map[string]any `json:"content"`
 }
 
-// apiToolDef represents a tool definition for the API.
-type apiToolDef struct {
+// ToolDef represents a tool definition for the API.
+type ToolDef struct {
 	Name        string         `json:"name"`
 	Description string         `json:"description"`
 	InputSchema map[string]any `json:"input_schema"`
 }
 
-// apiRequest represents a request to the Anthropic Messages API.
-type apiRequest struct {
-	Model     string       `json:"model"`
-	MaxTokens int          `json:"max_tokens"`
-	System    string       `json:"system,omitempty"`
-	Messages  []apiMessage `json:"messages"`
-	Tools     []apiToolDef `json:"tools,omitempty"`
+// Request represents a request to the Anthropic Messages API.
+type Request struct {
+	Model     string    `json:"model"`
+	MaxTokens int       `json:"max_tokens"`
+	System    string    `json:"system,omitempty"`
+	Messages  []Message `json:"messages"`
+	Tools     []ToolDef `json:"tools,omitempty"`
 }
 
-// apiResponseContentBlock represents a content block in the API response.
-type apiResponseContentBlock struct {
+// ResponseContentBlock represents a content block in the API response.
+type ResponseContentBlock struct {
 	Type  string          `json:"type"`
 	Text  string          `json:"text,omitempty"`
 	ID    string          `json:"id,omitempty"`
@@ -72,60 +75,61 @@ type apiResponseContentBlock struct {
 	Input json.RawMessage `json:"input,omitempty"`
 }
 
-// apiResponseUsage represents token usage in the API response.
-type apiResponseUsage struct {
+// ResponseUsage represents token usage in the API response.
+type ResponseUsage struct {
 	InputTokens  int `json:"input_tokens"`
 	OutputTokens int `json:"output_tokens"`
 }
 
-// apiResponse represents a response from the Anthropic Messages API.
-type apiResponse struct {
-	ID         string                    `json:"id"`
-	Type       string                    `json:"type"`
-	Role       string                    `json:"role"`
-	Content    []apiResponseContentBlock `json:"content"`
-	StopReason string                    `json:"stop_reason"`
-	Usage      apiResponseUsage          `json:"usage"`
+// Response represents a response from the Anthropic Messages API.
+type Response struct {
+	ID         string                 `json:"id"`
+	Type       string                 `json:"type"`
+	Role       string                 `json:"role"`
+	Content    []ResponseContentBlock `json:"content"`
+	StopReason string                 `json:"stop_reason"`
+	Usage      ResponseUsage          `json:"usage"`
 }
 
-// responseToMessage converts an API response into an apiMessage suitable for
+// ResponseToMessage converts an API response into a Message suitable for
 // appending to the conversation history.
-func responseToMessage(resp *apiResponse) apiMessage {
+func ResponseToMessage(resp *Response) Message {
 	blocks := make([]map[string]any, len(resp.Content))
 	for i, cb := range resp.Content {
 		switch cb.Type {
 		case "text":
-			blocks[i] = textBlock(cb.Text)
+			blocks[i] = TextBlock(cb.Text)
 		case "tool_use":
 			var input map[string]any
 			_ = json.Unmarshal(cb.Input, &input)
-			blocks[i] = toolUseBlock(cb.ID, cb.Name, input)
+			blocks[i] = ToolUseBlock(cb.ID, cb.Name, input)
 		default:
 			blocks[i] = map[string]any{"type": cb.Type}
 		}
 	}
-	return apiMessage{
+	return Message{
 		Role:    resp.Role,
 		Content: blocks,
 	}
 }
 
-// toolInput represents the parsed input for the execute-starlark tool.
-type toolInput struct {
+// ToolInput represents the parsed input for the execute-starlark tool.
+type ToolInput struct {
 	Program     string  `json:"program"`
 	TimeoutSecs float64 `json:"timeout_secs"`
 }
 
-// llmClient is a simple client for the Anthropic Messages API.
-type llmClient struct {
+// Client is a simple client for the Anthropic Messages API.
+type Client struct {
 	apiKey  string
 	model   string
 	baseURL string
 	http    *http.Client
 }
 
-func newLLMClient(apiKey, model, baseURL string) *llmClient {
-	return &llmClient{
+// NewClient creates a new LLM client.
+func NewClient(apiKey, model, baseURL string) *Client {
+	return &Client{
 		apiKey:  apiKey,
 		model:   model,
 		baseURL: baseURL,
@@ -133,7 +137,8 @@ func newLLMClient(apiKey, model, baseURL string) *llmClient {
 	}
 }
 
-func (c *llmClient) sendRequest(ctx context.Context, req *apiRequest) (*apiResponse, error) {
+// SendRequest sends a request to the Anthropic Messages API.
+func (c *Client) SendRequest(ctx context.Context, req *Request) (*Response, error) {
 	req.Model = c.model
 
 	body, err := json.Marshal(req)
@@ -164,7 +169,7 @@ func (c *llmClient) sendRequest(ctx context.Context, req *apiRequest) (*apiRespo
 		return nil, fmt.Errorf("API error (status %d): %s", httpResp.StatusCode, string(respBody))
 	}
 
-	var apiResp apiResponse
+	var apiResp Response
 	if err := json.Unmarshal(respBody, &apiResp); err != nil {
 		return nil, fmt.Errorf("unmarshal response: %w", err)
 	}
