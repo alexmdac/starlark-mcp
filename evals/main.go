@@ -44,13 +44,13 @@ func main() {
 
 	llm := NewClient(apiKey, model, baseURL)
 
+	fmt.Fprintf(os.Stderr, "Running %d evals...\n", len(Cases))
 	results := make([]evalResult, len(Cases))
 	var wg sync.WaitGroup
 	for i, ec := range Cases {
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
-			fmt.Fprintf(os.Stderr, "Running %s...\n", ec.Name)
 
 			// Each eval gets its own MCP session for isolation.
 			ctx := context.Background()
