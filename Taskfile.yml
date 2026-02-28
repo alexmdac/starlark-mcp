@@ -58,6 +58,6 @@ tasks:
     deps: [check, test-msan, test-asan]
 
   eval:
-    desc: Run LLM evals (requires ANTHROPIC_API_KEY)
+    desc: Run LLM evals
     cmds:
       - go run -tags eval ./evals
