@@ -12,7 +12,9 @@ import (
 	"time"
 )
 
-// Content block helpers using map[string]any to avoid JSON polymorphism issues.
+// Content blocks are represented as map[string]any because the Anthropic API
+// uses a union type (text, tool_use, tool_result) that would require custom
+// JSON marshaling to model with Go types.
 
 // textBlock creates a text content block.
 func textBlock(text string) map[string]any {
