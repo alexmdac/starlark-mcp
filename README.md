@@ -11,7 +11,7 @@ attractive option for executing LLM-generated code.
 Programs can emit text output using the `print()` function, which is captured
 and returned to the LLM client. Output is limited to 16KB.
 
-The server augments Starlark with some [builtin functions](builtins.md).
+The server augments Starlark with some [builtin functions](server/builtins.md).
 
 ## Installation
 
