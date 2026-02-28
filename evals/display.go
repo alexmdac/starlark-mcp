@@ -263,31 +263,35 @@ func printSummaryTable(model string, numRuns int, nameWidth int, results []caseR
 
 	// Print failed run details for cases that didn't pass every run.
 	for _, cr := range results {
-		var failedRuns []evalResult
-		for _, r := range cr.Runs {
+		type failedRun struct {
+			index int
+			r     evalResult
+		}
+		var failed []failedRun
+		for ri, r := range cr.Runs {
 			if !r.Passed {
-				failedRuns = append(failedRuns, r)
+				failed = append(failed, failedRun{ri, r})
 			}
 		}
-		if len(failedRuns) == 0 {
+		if len(failed) == 0 {
 			continue
 		}
 
-		passedCount := len(cr.Runs) - len(failedRuns)
+		passedCount := len(cr.Runs) - len(failed)
 		if passedCount > 0 {
 			fmt.Printf("\n%s%sFAILED RUNS (%d/%d failed): %s%s\n",
-				colorBold, colorYellow, len(failedRuns), len(cr.Runs), cr.ec.name, colorReset)
+				colorBold, colorYellow, len(failed), len(cr.Runs), cr.ec.name, colorReset)
 		} else {
 			fmt.Printf("\n%s%sFAILED (all %d runs): %s%s\n",
 				colorBold, colorRed, len(cr.Runs), cr.ec.name, colorReset)
 		}
-		for ri, r := range failedRuns {
-			if len(r.Outputs) == 0 {
-				fmt.Printf("%sRun %d: no output%s\n", colorDim, ri+1, colorReset)
+		for _, f := range failed {
+			if len(f.r.Outputs) == 0 {
+				fmt.Printf("%sRun %d: no output%s\n", colorDim, f.index+1, colorReset)
 				continue
 			}
-			last := r.Outputs[len(r.Outputs)-1]
-			fmt.Printf("%sRun %d (last output):%s\n%s\n", colorDim, ri+1, colorReset, last)
+			last := f.r.Outputs[len(f.r.Outputs)-1]
+			fmt.Printf("%sRun %d (last output):%s\n%s\n", colorDim, f.index+1, colorReset, last)
 		}
 	}
 }
