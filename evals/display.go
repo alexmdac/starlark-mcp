@@ -166,8 +166,8 @@ func printSummary(model string, numRuns int, results []caseResults) {
 func printSummaryTable(model string, numRuns int, nameWidth int, results []caseResults) {
 	// Columns: mark NAME  PASS_RATE  AVG_SCORE  AVG_TRIES  TOKENS
 	passColW := 9 // "5/5 100%"
-	tableWidth := 3 + nameWidth + 2 + passColW + 2 + 9 + 2 + 9 + 2 + 14
-	headerFmt := fmt.Sprintf("%%s   %%-%ds  %%-%ds  %%9s  %%9s  %%14s%%s\n", nameWidth, passColW)
+	tableWidth := 3 + nameWidth + 2 + passColW + 2 + 9 + 2 + 9 + 2 + 15
+	headerFmt := fmt.Sprintf("%%s   %%-%ds  %%-%ds  %%9s  %%9s  %%15s%%s\n", nameWidth, passColW)
 	rowFmt := fmt.Sprintf(" %%s%%s%%s %%-%ds  %%s%%-%ds  %%9.2f  %%9.1f  %%6d / %%6d%%s\n", nameWidth, passColW)
 
 	fmt.Printf("\n%s%s%s\n", colorCyan, strings.Repeat("═", tableWidth), colorReset)
