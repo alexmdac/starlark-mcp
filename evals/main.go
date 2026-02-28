@@ -76,8 +76,7 @@ func main() {
 		}
 		apiKey := os.Getenv("OPENAI_API_KEY")
 		if apiKey == "" {
-			fmt.Fprintf(os.Stderr, "OPENAI_API_KEY is required for the openai provider\n")
-			os.Exit(1)
+			apiKey = "unspecified"
 		}
 		client = llm.NewOpenAI(apiKey, model, baseURL)
 	default:
