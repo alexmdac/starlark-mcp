@@ -131,6 +131,7 @@ func printSummary(model string, results []evalResult) {
 		2: "SIMPLE ALGORITHMS",
 		3: "INTERMEDIATE",
 		4: "HARD",
+		5: "EXPERT",
 	}
 
 	// Find the longest case name for column sizing.
@@ -157,7 +158,7 @@ func printSummary(model string, results []evalResult) {
 	totalTokensIn := 0
 	totalTokensOut := 0
 
-	for tier := 1; tier <= 4; tier++ {
+	for tier := 1; tier <= 5; tier++ {
 		var tierResults []evalResult
 		for _, r := range results {
 			if r.ec.tier == tier {
