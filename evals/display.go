@@ -207,4 +207,15 @@ func printSummary(model string, results []evalResult) {
 	fmt.Printf("%s%sOVERALL: %.2f (%d/%d passed)  tokens: %d in, %d out%s\n",
 		colorBold, colorCyan, totalScore/float64(totalCases), totalPassed, totalCases, totalTokensIn, totalTokensOut, colorReset)
 	fmt.Printf("%s%s%s\n", colorCyan, strings.Repeat("─", tableWidth), colorReset)
+
+	// Print details for failed cases.
+	for _, r := range results {
+		if r.Passed || len(r.Outputs) == 0 {
+			continue
+		}
+		fmt.Printf("\n%s%sFAILED: %s%s\n", colorBold, colorRed, r.ec.name, colorReset)
+		for i, out := range r.Outputs {
+			fmt.Printf("%sAttempt %d:%s\n%s\n", colorDim, i+1, colorReset, out)
+		}
+	}
 }
