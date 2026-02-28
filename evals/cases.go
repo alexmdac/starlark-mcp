@@ -20,19 +20,12 @@ type evalCase struct {
 // It strips leading/trailing blank lines, computes the longest common
 // whitespace prefix across all non-empty lines, and removes it.
 func dedent(s string) string {
-	lines := strings.Split(s, "\n")
-
-	// Strip leading blank lines.
-	for len(lines) > 0 && strings.TrimSpace(lines[0]) == "" {
-		lines = lines[1:]
-	}
-	// Strip trailing blank lines.
-	for len(lines) > 0 && strings.TrimSpace(lines[len(lines)-1]) == "" {
-		lines = lines[:len(lines)-1]
-	}
-	if len(lines) == 0 {
+	s = strings.TrimLeft(s, "\n")
+	s = strings.TrimRight(s, " \t\n")
+	if s == "" {
 		return ""
 	}
+	lines := strings.Split(s, "\n")
 
 	// Find longest common whitespace prefix (considering only non-empty lines).
 	prefix := ""
