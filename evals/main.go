@@ -390,6 +390,9 @@ func printSummary(model string, results []evalResult) {
 		if len(tierResults) == 0 {
 			continue
 		}
+		sort.Slice(tierResults, func(a, b int) bool {
+			return tierResults[a].Case.Name < tierResults[b].Case.Name
+		})
 
 		fmt.Printf("\n%s%sTIER %d: %s%s\n", colorBold, colorCyan, tier, tierNames[tier], colorReset)
 
