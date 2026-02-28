@@ -34,7 +34,3 @@ main()
 * Most Python string methods (`.upper()`, `.lower()`, `.strip()`, `.replace()`, `.split()`, `.join()`, `.format()`). Missing: `.rjust()`, `.ljust()`, `.center()`
 * List comprehensions: `[f(x) for x in items]`
 * Math module: `load("math", "sqrt", "pow", "sin", "cos", "log", "ceil", "floor", "pi", "e")`
-
-## Reference
-
-[Starlark Language Specification](https://raw.githubusercontent.com/google/starlark-go/bf296ed553ea1715656054a7f64ac6a6dd161360/doc/spec.md)
