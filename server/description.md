@@ -9,7 +9,6 @@ Starlark is a Python-like language with some restrictions and syntax differences
 * No f-strings — use `%` formatting (`"hello %s" % name`) or concatenation
 * No star unpacking (`a, *b = list`)
 * No `**` operator — use `x * x` or `load("math", "pow"); pow(x, 2)`
-* No built-in `sum()` — use a for loop
 * Operator chaining requires parentheses: `(a <= b) and (b < c)` not `a <= b < c`
 
 ## Available Features
