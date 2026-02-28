@@ -39,7 +39,7 @@ type caseResults struct {
 }
 
 func main() {
-	runsFlag := flag.Int("runs", 1, "number of independent runs per eval case")
+	runsFlag := flag.Int("runs", 5, "number of independent runs per eval case")
 	flag.Parse()
 	numRuns := *runsFlag
 	if numRuns < 1 {
