@@ -43,17 +43,12 @@ const defaultAnthropicURL = "http://169.254.169.254/gateway/llm/anthropic"
 
 func main() {
 	runsFlag := flag.Int("runs", 5, "number of independent runs per eval case")
-	llmFlag := flag.String("llm", "", "provider:model (e.g. \"anthropic:claude-haiku-4-5\")")
+	llmFlag := flag.String("llm", "anthropic:claude-sonnet-4-6", "provider:model (e.g. \"anthropic:claude-haiku-4-5\")")
 	llmURLFlag := flag.String("llm-url", "", "base URL for the LLM API (overrides provider default)")
 	flag.Parse()
 	numRuns := *runsFlag
 	if numRuns < 1 {
 		numRuns = 1
-	}
-
-	if *llmFlag == "" {
-		fmt.Fprintf(os.Stderr, "--llm is required (e.g. \"anthropic:claude-haiku-4-5\")\n")
-		os.Exit(1)
 	}
 
 	providerName, model, err := llm.ParseModel(*llmFlag)
