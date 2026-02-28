@@ -82,8 +82,15 @@ func executeStarlark(ctx context.Context, program string) (string, error) {
 		}
 		thread.Cancel(reason)
 	})
+	opts := &syntax.FileOptions{
+		Set:             true,
+		While:           true,
+		TopLevelControl: true,
+		GlobalReassign:  true,
+		Recursion:       true,
+	}
 	_, err := starlark.ExecFileOptions(
-		syntax.LegacyFileOptions(),
+		opts,
 		thread,
 		"LLM supplied program",
 		program,
