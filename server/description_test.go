@@ -11,7 +11,7 @@ import (
 // dedent is a short alias so callers don't need the package qualifier.
 var dedent = textutil.Dedent
 
-// Tests that verify claims made in execute_starlark_description.md.
+// Tests that verify claims made in description.md.
 // If a test here fails, update the description to match reality.
 //
 // These tests exist because LLMs editing the description will confidently

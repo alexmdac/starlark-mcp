@@ -17,7 +17,7 @@ const (
 	executeStarlarkName = "execute-starlark"
 )
 
-//go:embed execute_starlark_description.md
+//go:embed description.md
 var executeStarlarkDescription string
 
 func addExecuteStarlarkTool(server *mcp.Server) {
