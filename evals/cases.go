@@ -620,11 +620,11 @@ var cases = []evalCase{
 		name: "look_and_say",
 		tier: 6,
 		prompt: dedent(`
-			Generate the look-and-say sequence starting from "1". Print the first
-			10 terms (terms 1 through 10), one per line. The look-and-say sequence
-			works by describing the previous term: "1" becomes "11" (one 1),
-			"11" becomes "21" (two 1s), "21" becomes "1211" (one 2, one 1), etc.
-			Print only the 10 terms, one per line, nothing else.
+			Generate the look-and-say sequence starting from "1". Print terms 1
+			through 12, one per line. The look-and-say sequence works by describing
+			the previous term: "1" becomes "11" (one 1), "11" becomes "21"
+			(two 1s), "21" becomes "1211" (one 2, one 1), etc.
+			Print only the 12 terms, one per line, nothing else.
 		`),
 		judge: exactOutput(dedent(`
 			1
@@ -637,42 +637,8 @@ var cases = []evalCase{
 			1113213211
 			31131211131221
 			13211311123113112211
-		`)),
-	},
-	{
-		name: "rule110",
-		tier: 6,
-		prompt: dedent(`
-			Simulate Rule 110, an elementary cellular automaton, on a row of 21
-			cells for 15 generations. The initial state has only the rightmost
-			cell set to 1 (all others 0). Cells outside the row are treated as 0.
-
-			Rule 110 maps each 3-cell neighborhood (left, center, right) to a new
-			value. Interpret the 3 cells as a 3-bit number (left*4 + center*2 +
-			right) and use it as an index into the binary representation of 110
-			(01101110): bit 0=0, bit 1=1, bit 2=1, bit 3=1, bit 4=0, bit 5=1,
-			bit 6=1, bit 7=0.
-
-			Print 16 rows (the initial state plus 15 generations), one per line,
-			with cells separated by spaces. Print only the grid, nothing else.
-		`),
-		judge: exactOutput(dedent(`
-			0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1
-			0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 1
-			0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 1 1
-			0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 1 0 1
-			0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 1 1 1 1
-			0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 1 0 0 0 1
-			0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 1 1 0 0 1 1
-			0 0 0 0 0 0 0 0 0 0 0 0 0 1 1 0 1 0 1 1 1
-			0 0 0 0 0 0 0 0 0 0 0 0 1 1 1 1 1 1 1 0 1
-			0 0 0 0 0 0 0 0 0 0 0 1 1 0 0 0 0 0 1 1 1
-			0 0 0 0 0 0 0 0 0 0 1 1 1 0 0 0 0 1 1 0 1
-			0 0 0 0 0 0 0 0 0 1 1 0 1 0 0 0 1 1 1 1 1
-			0 0 0 0 0 0 0 0 1 1 1 1 1 0 0 1 1 0 0 0 1
-			0 0 0 0 0 0 0 1 1 0 0 0 1 0 1 1 1 0 0 1 1
-			0 0 0 0 0 0 1 1 1 0 0 1 1 1 1 0 1 0 1 1 1
-			0 0 0 0 0 1 1 0 1 0 1 1 0 0 1 1 1 1 1 0 1
+			11131221133112132113212221
+			3113112221232112111312211312113211
 		`)),
 	},
 	{
@@ -682,18 +648,23 @@ var cases = []evalCase{
 			Find the length of the shortest path from S to E in this maze.
 			You may move up, down, left, or right. '#' is a wall, '.' is open.
 
-			########
-			#S.#...#
-			#.##.#.#
-			#....#.#
-			##.###.#
-			#..#...#
-			#.##.#E#
-			########
+			################
+			#S.#.....#.....#
+			#.##.###.#.###.#
+			#....#.#...#...#
+			####.#.#.###.#.#
+			#....#.....#.#.#
+			#.####.###.#.#.#
+			#.#....#.#...#.#
+			#.#.####.###.#.#
+			#.#........#.#.#
+			#.########.#...#
+			#..........#..E#
+			################
 
 			Print only the number of steps in the shortest path, nothing else.
 		`),
-		judge: exactOutput("14"),
+		judge: exactOutput("27"),
 	},
 	{
 		name: "shunting_yard",
@@ -701,35 +672,64 @@ var cases = []evalCase{
 		prompt: dedent(`
 			Evaluate these arithmetic expressions respecting standard operator
 			precedence (* and / before + and -). All operators are left-associative.
-			Use integer division (round toward zero). Print each result on its own
+			Use integer division (round toward zero). Parenthesized tokens are
+			space-separated (e.g. "( 2 + 3 )"). Print each result on its own
 			line, in order.
 
-			2 + 3 * 4 - 8 / 2
-			10 * 2 + 3 * 4 - 5
-			100 - 90 + 2 * 3 * 4
-			7 + 8 / 4 * 2 - 1
+			( 2 + 3 ) * ( 4 - 1 )
+			10 * ( 6 + 3 ) / ( 2 + 1 )
+			( ( 3 + 5 ) * 2 - 4 ) / ( 1 + 1 )
+			8 / ( 4 - 2 ) + 3 * ( 1 + 2 )
 
 			Print only the four numbers, one per line, nothing else.
 		`),
 		judge: exactOutput(dedent(`
-			10
-			27
-			34
-			10
+			15
+			30
+			6
+			13
 		`)),
 	},
 	{
-		name: "determinant_4x4",
+		name: "determinant_6x6",
 		tier: 6,
 		prompt: dedent(`
-			Compute the determinant of this 4x4 matrix:
-			[[1, 2, 3, 4],
-			 [5, 6, 7, 8],
-			 [2, 6, 4, 8],
-			 [3, 1, 1, 2]]
+			Compute the determinant of this 6x6 matrix:
+			[[2, 1, 3, 4, 1, 2],
+			 [1, 3, 2, 1, 4, 1],
+			 [3, 2, 1, 2, 1, 3],
+			 [4, 1, 2, 3, 2, 1],
+			 [1, 4, 1, 2, 3, 2],
+			 [2, 1, 3, 1, 2, 4]]
 			Print only the integer result, nothing else.
 		`),
-		judge: exactOutput("72"),
+		judge: exactOutput("95"),
+	},
+	{
+		name: "dijkstra",
+		tier: 6,
+		prompt: dedent(`
+			Find the shortest path distances from node A to all other nodes in
+			this weighted undirected graph using Dijkstra's algorithm.
+
+			Edges (node1-node2: weight):
+			A-B: 4, A-C: 2, B-D: 5, B-E: 10, C-D: 8, C-F: 3,
+			D-E: 2, D-F: 1, E-G: 6, F-G: 7, F-H: 4, G-H: 1
+
+			Print one line per node (A through H in order), in the format
+			"X D" where X is the node name and D is the shortest distance
+			from A. Print only these 8 lines, nothing else.
+		`),
+		judge: exactOutput(dedent(`
+			A 0
+			B 4
+			C 2
+			D 6
+			E 8
+			F 5
+			G 10
+			H 9
+		`)),
 	},
 	{
 		name: "stack_vm",
@@ -738,7 +738,7 @@ var cases = []evalCase{
 			Implement a stack-based virtual machine and execute this program.
 			Instructions are comma-separated. The operations are:
 			- PUSH n: push integer n onto the stack
-			- ADD: pop top two values, push their sum
+			- ADD: pop a (top), pop b (second), push b + a
 			- SUB: pop a (top), pop b (second), push b - a
 			- MUL: pop a (top), pop b (second), push b * a
 			- DUP: duplicate the top of stack

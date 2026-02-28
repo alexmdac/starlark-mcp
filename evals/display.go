@@ -127,7 +127,6 @@ func (d *display) render() {
 
 func printSummary(model string, results []evalResult) {
 
-
 	// Find the longest case name for column sizing.
 	nameWidth := 4 // minimum for "NAME"
 	for _, r := range results {
