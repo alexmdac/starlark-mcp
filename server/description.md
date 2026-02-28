@@ -14,6 +14,5 @@ Starlark is a Python-like language with some restrictions and syntax differences
 
 ## Available Features
 
-* While loops, recursion, top-level if/for/while, and set() are all supported
 * Most Python string methods work. Missing: `.rjust()`, `.ljust()`, `.center()`
 * Math module: `load("math", "sqrt", "pow", "sin", "cos", "log", "ceil", "floor", "pi", "e")`
