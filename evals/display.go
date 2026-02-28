@@ -20,6 +20,7 @@ type display struct {
 	numRuns    int
 	runsDone   []int
 	runsPassed []int
+	finishTime []time.Time
 	stopCh     chan struct{}
 }
 
@@ -39,6 +40,7 @@ func newDisplay(cs []evalCase, numRuns int) *display {
 		numRuns:    numRuns,
 		runsDone:   make([]int, len(cs)),
 		runsPassed: make([]int, len(cs)),
+		finishTime: make([]time.Time, len(cs)),
 		stopCh:     make(chan struct{}),
 	}
 	for i := range cs {
@@ -71,6 +73,9 @@ func (d *display) finishRun(i int, passed bool) {
 	d.runsDone[i]++
 	if passed {
 		d.runsPassed[i]++
+	}
+	if d.runsDone[i] >= d.numRuns {
+		d.finishTime[i] = time.Now()
 	}
 	d.mu.Unlock()
 	d.render()
@@ -113,6 +118,7 @@ func (d *display) render() {
 
 		if done >= total {
 			// Finished.
+			elapsed := d.finishTime[i].Sub(d.startTimes[i]).Round(time.Millisecond)
 			color := colorGreen
 			mark := "✔"
 			if passed == 0 {
@@ -123,12 +129,11 @@ func (d *display) render() {
 				mark = "◑"
 			}
 			if total == 1 {
-				fmt.Fprintf(os.Stderr, "  %s%s %s%s\n",
-					color, mark, c.name, colorReset)
+				fmt.Fprintf(os.Stderr, "  %s%s %s%s %s(%s)%s\n",
+					color, mark, c.name, colorReset, colorDim, elapsed, colorReset)
 			} else {
-				passRate := float64(passed) / float64(total) * 100
-				fmt.Fprintf(os.Stderr, "  %s%s %s%s %s(%d/%d passed, %.0f%%)%s\n",
-					color, mark, c.name, colorReset, colorDim, passed, total, passRate, colorReset)
+				fmt.Fprintf(os.Stderr, "  %s%s %s%s %s(%d/%d passed, %s)%s\n",
+					color, mark, c.name, colorReset, colorDim, passed, total, elapsed, colorReset)
 			}
 		} else {
 			// In progress.
