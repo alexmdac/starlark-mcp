@@ -26,7 +26,7 @@ type display struct {
 
 func newDisplay(cs []evalCase) *display {
 	now := time.Now()
-	sorted := make([]int, len(cases))
+	sorted := make([]int, len(cs))
 	for i := range sorted {
 		sorted[i] = i
 	}
@@ -36,11 +36,11 @@ func newDisplay(cs []evalCase) *display {
 	d := &display{
 		cases:      cs,
 		sorted:     sorted,
-		startTimes: make([]time.Time, len(cases)),
-		done:       make([]bool, len(cases)),
-		passed:     make([]bool, len(cases)),
-		attempts:   make([]int, len(cases)),
-		durations:  make([]time.Duration, len(cases)),
+		startTimes: make([]time.Time, len(cs)),
+		done:       make([]bool, len(cs)),
+		passed:     make([]bool, len(cs)),
+		attempts:   make([]int, len(cs)),
+		durations:  make([]time.Duration, len(cs)),
 		stopCh:     make(chan struct{}),
 	}
 	for i := range cs {
@@ -112,10 +112,10 @@ func (d *display) render() {
 		if d.done[i] {
 			if d.passed[i] {
 				fmt.Fprintf(os.Stderr, "  %s✔ %s%s %s(%s, %d attempts)%s\n",
-				colorGreen, c.name, colorReset, colorDim, d.durations[i].Round(time.Millisecond), d.attempts[i], colorReset)
-		} else {
-			fmt.Fprintf(os.Stderr, "  %s✘ %s%s %s(%s, %d attempts)%s\n",
-				colorRed, c.name, colorReset, colorDim, d.durations[i].Round(time.Millisecond), d.attempts[i], colorReset)
+					colorGreen, c.name, colorReset, colorDim, d.durations[i].Round(time.Millisecond), d.attempts[i], colorReset)
+			} else {
+				fmt.Fprintf(os.Stderr, "  %s✘ %s%s %s(%s, %d attempts)%s\n",
+					colorRed, c.name, colorReset, colorDim, d.durations[i].Round(time.Millisecond), d.attempts[i], colorReset)
 			}
 		} else {
 			elapsed := now.Sub(d.startTimes[i]).Round(time.Second)

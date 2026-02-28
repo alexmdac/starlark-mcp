@@ -9,6 +9,7 @@ import (
 	"fmt"
 	"math"
 	"os"
+	"os/signal"
 	"strings"
 	"sync"
 	"time"
@@ -18,15 +19,15 @@ import (
 )
 
 type evalResult struct {
-	ec          evalCase
-	Passed      bool
-	Attempts    int
-	Score       float64
-	Outputs     []string // starlark output from each attempt
-	TokensIn    int
-	TokensOut   int
-	Duration    time.Duration
-	LLMTime     time.Duration
+	ec           evalCase
+	Passed       bool
+	Attempts     int
+	Score        float64
+	Outputs      []string // starlark output from each attempt
+	TokensIn     int
+	TokensOut    int
+	Duration     time.Duration
+	LLMTime      time.Duration
 	StarlarkTime time.Duration
 }
 
@@ -46,7 +47,14 @@ func main() {
 		baseURL = "https://api.anthropic.com"
 	}
 
+	ctx, cancel := signal.NotifyContext(context.Background(), os.Interrupt)
+	defer cancel()
+
 	llm := newClient(apiKey, model, baseURL)
+
+	// Limit concurrency to avoid API rate limits.
+	const maxConcurrent = 8
+	sem := make(chan struct{}, maxConcurrent)
 
 	disp := newDisplay(cases)
 	results := make([]evalResult, len(cases))
@@ -55,19 +63,22 @@ func main() {
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
+			sem <- struct{}{}
+			defer func() { <-sem }()
 
 			// Each eval gets its own MCP session for isolation.
-			ctx := context.Background()
 			t1, t2 := mcp.NewInMemoryTransports()
 			srv := server.New()
 			mcpClient := mcp.NewClient(&mcp.Implementation{Name: "eval-client"}, nil)
 
 			if _, err := srv.Connect(ctx, t1, nil); err != nil {
+				results[i] = evalResult{ec: ec}
 				disp.finish(i, false, 0, 0)
 				return
 			}
 			session, err := mcpClient.Connect(ctx, t2, nil)
 			if err != nil {
+				results[i] = evalResult{ec: ec}
 				disp.finish(i, false, 0, 0)
 				return
 			}
@@ -75,11 +86,12 @@ func main() {
 
 			toolDefs, err := mcpToolDefs(ctx, session)
 			if err != nil {
+				results[i] = evalResult{ec: ec}
 				disp.finish(i, false, 0, 0)
 				return
 			}
 
-			results[i] = runEval(llm, session, toolDefs, ec)
+			results[i] = runEval(ctx, llm, session, toolDefs, ec)
 			results[i].Duration = time.Since(disp.startTimes[i])
 			disp.finish(i, results[i].Passed, results[i].Attempts, results[i].Duration)
 		}()
@@ -144,7 +156,7 @@ func callMCPTool(ctx context.Context, session *mcp.ClientSession, name string, r
 	return sb.String(), res.IsError, nil
 }
 
-func runEval(llm *client, session *mcp.ClientSession, toolDefs []toolDef, ec evalCase) evalResult {
+func runEval(ctx context.Context, llm *client, session *mcp.ClientSession, toolDefs []toolDef, ec evalCase) evalResult {
 	const maxAttempts = 3
 	const maxIterations = 6
 
@@ -173,7 +185,7 @@ func runEval(llm *client, session *mcp.ClientSession, toolDefs []toolDef, ec eva
 		}
 
 		llmStart := time.Now()
-		resp, err := llm.sendRequest(context.Background(), req)
+		resp, err := llm.sendRequest(ctx, req)
 		result.LLMTime += time.Since(llmStart)
 		if err != nil {
 			break
@@ -200,7 +212,7 @@ func runEval(llm *client, session *mcp.ClientSession, toolDefs []toolDef, ec eva
 		// Call the tool via MCP.
 		toolStart := time.Now()
 		output, toolIsError, callErr := callMCPTool(
-			context.Background(), session, toolUse.Name, toolUse.Input,
+			ctx, session, toolUse.Name, toolUse.Input,
 		)
 		result.StarlarkTime += time.Since(toolStart)
 
@@ -252,5 +264,3 @@ func runEval(llm *client, session *mcp.ClientSession, toolDefs []toolDef, ec eva
 	result.Score = 0.0
 	return result
 }
-
-

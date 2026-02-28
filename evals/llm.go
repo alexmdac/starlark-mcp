@@ -104,6 +104,9 @@ func responseToMessage(resp *response) message {
 			blocks[i] = textBlock(cb.Text)
 		case "tool_use":
 			var input map[string]any
+			// Unmarshal error is intentionally ignored: if the LLM returns
+			// malformed JSON, input stays nil which is safe for the
+			// conversation history (the next tool call will fail clearly).
 			_ = json.Unmarshal(cb.Input, &input)
 			blocks[i] = toolUseBlock(cb.ID, cb.Name, input)
 		default:
@@ -115,7 +118,6 @@ func responseToMessage(resp *response) message {
 		Content: blocks,
 	}
 }
-
 
 // client is a simple client for the Anthropic Messages API.
 type client struct {
