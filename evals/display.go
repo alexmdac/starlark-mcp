@@ -128,23 +128,13 @@ func (d *display) render() {
 				color = colorYellow
 				mark = "◑"
 			}
-			if total == 1 {
-				fmt.Fprintf(os.Stderr, "  %s%s %s%s %s(%s)%s\n",
-					color, mark, c.name, colorReset, colorDim, elapsed, colorReset)
-			} else {
-				fmt.Fprintf(os.Stderr, "  %s%s %s%s %s(%d/%d passed, %s)%s\n",
-					color, mark, c.name, colorReset, colorDim, passed, total, elapsed, colorReset)
-			}
+			fmt.Fprintf(os.Stderr, "  %s%s %s%s %s(%d/%d passed, %s)%s\n",
+				color, mark, c.name, colorReset, colorDim, passed, total, elapsed, colorReset)
 		} else {
 			// In progress.
 			elapsed := now.Sub(d.startTimes[i]).Round(time.Second)
-			if total == 1 {
-				fmt.Fprintf(os.Stderr, "  %s%s %s%s %s(%s)%s\n",
-					colorYellow, spinnerFrames[frame], c.name, colorReset, colorDim, elapsed, colorReset)
-			} else {
-				fmt.Fprintf(os.Stderr, "  %s%s %s%s %s(%d/%d done, %s)%s\n",
-					colorYellow, spinnerFrames[frame], c.name, colorReset, colorDim, done, total, elapsed, colorReset)
-			}
+			fmt.Fprintf(os.Stderr, "  %s%s %s%s %s(%d/%d done, %s)%s\n",
+				colorYellow, spinnerFrames[frame], c.name, colorReset, colorDim, done, total, elapsed, colorReset)
 		}
 	}
 }
@@ -159,109 +149,10 @@ func printSummary(model string, numRuns int, results []caseResults) {
 		}
 	}
 
-	// Column layout depends on whether we have multiple runs.
-	// Single run:  NAME  TRIES  SCORE  LLM  STARLARK
-	// Multi run:   NAME  PASS_RATE  AVG_SCORE  AVG_TRIES  TOKENS_IN  TOKENS_OUT
-
-	if numRuns == 1 {
-		printSummarySingle(model, nameWidth, results)
-	} else {
-		printSummaryMulti(model, numRuns, nameWidth, results)
-	}
+	printSummaryTable(model, numRuns, nameWidth, results)
 }
 
-func printSummarySingle(model string, nameWidth int, results []caseResults) {
-	tableWidth := 3 + nameWidth + 2 + 5 + 2 + 5 + 2 + 10 + 2 + 10
-	headerFmt := fmt.Sprintf("%%s   %%-%ds  %%5s  %%5s  %%10s  %%10s%%s\n", nameWidth)
-	rowFmt := fmt.Sprintf(" %%s%%s%%s %%-%ds  %%s%%5d  %%5.2f  %%10s  %%10s%%s\n", nameWidth)
-
-	fmt.Printf("\n%s%s%s\n", colorCyan, strings.Repeat("═", tableWidth), colorReset)
-	fmt.Printf("%s%sEVAL RESULTS — model: %s%s\n", colorBold, colorCyan, model, colorReset)
-	fmt.Printf("%s%s%s\n", colorCyan, strings.Repeat("═", tableWidth), colorReset)
-	fmt.Printf(headerFmt, colorDim, "NAME", "TRIES", "SCORE", "LLM", "STARLARK", colorReset)
-
-	totalPassed := 0
-	totalCases := 0
-	totalScore := 0.0
-	totalTokensIn := 0
-	totalTokensOut := 0
-
-	for tier := 1; tier <= maxTier; tier++ {
-		var tierCases []caseResults
-		for _, cr := range results {
-			if cr.ec.tier == tier {
-				tierCases = append(tierCases, cr)
-			}
-		}
-		if len(tierCases) == 0 {
-			continue
-		}
-		sort.Slice(tierCases, func(a, b int) bool {
-			return tierCases[a].ec.name < tierCases[b].ec.name
-		})
-
-		fmt.Printf("\n%s%sTIER %d: %s%s\n", colorBold, colorCyan, tier, tierNames[tier], colorReset)
-
-		tierPassed := 0
-		tierTotal := len(tierCases)
-		tierScore := 0.0
-
-		for _, cr := range tierCases {
-			r := cr.Runs[0]
-			var mark, color string
-			if r.Passed {
-				mark = "✔"
-				color = colorGreen
-				tierPassed++
-			} else {
-				mark = "✘"
-				color = colorRed
-			}
-			fmt.Printf(rowFmt,
-				color, mark, colorReset, cr.ec.name, colorDim, r.Attempts, r.Score, r.LLMTime.Round(time.Second), r.StarlarkTime.Round(time.Millisecond), colorReset)
-			tierScore += r.Score
-			totalTokensIn += r.TokensIn
-			totalTokensOut += r.TokensOut
-		}
-
-		fmt.Printf("   %sTier score: %.2f (%d/%d passed)%s\n",
-			colorDim, tierScore/float64(tierTotal), tierPassed, tierTotal, colorReset)
-
-		totalPassed += tierPassed
-		totalCases += tierTotal
-		totalScore += tierScore
-	}
-
-	fmt.Printf("\n%s%s%s\n", colorCyan, strings.Repeat("─", tableWidth), colorReset)
-	fmt.Printf("%s%sOVERALL: %.2f (%d/%d passed)  tokens: %d in, %d out%s\n",
-		colorBold, colorCyan, totalScore/float64(totalCases), totalPassed, totalCases, totalTokensIn, totalTokensOut, colorReset)
-	fmt.Printf("%s%s%s\n", colorCyan, strings.Repeat("─", tableWidth), colorReset)
-
-	// Print details for all failed attempts.
-	for _, cr := range results {
-		r := cr.Runs[0]
-		if len(r.Outputs) == 0 {
-			continue
-		}
-		failedCount := len(r.Outputs)
-		if r.Passed {
-			failedCount--
-		}
-		if failedCount == 0 {
-			continue
-		}
-		if r.Passed {
-			fmt.Printf("\n%s%sFAILED ATTEMPTS (eventually passed): %s%s\n", colorBold, colorYellow, cr.ec.name, colorReset)
-		} else {
-			fmt.Printf("\n%s%sFAILED: %s%s\n", colorBold, colorRed, cr.ec.name, colorReset)
-		}
-		for i := 0; i < failedCount; i++ {
-			fmt.Printf("%sAttempt %d:%s\n%s\n", colorDim, i+1, colorReset, r.Outputs[i])
-		}
-	}
-}
-
-func printSummaryMulti(model string, numRuns int, nameWidth int, results []caseResults) {
+func printSummaryTable(model string, numRuns int, nameWidth int, results []caseResults) {
 	// Columns: mark NAME  PASS_RATE  AVG_SCORE  AVG_TRIES  TOKENS
 	passColW := 9 // "5/5 100%"
 	tableWidth := 3 + nameWidth + 2 + passColW + 2 + 9 + 2 + 9 + 2 + 14
