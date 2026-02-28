@@ -87,7 +87,7 @@ Configuration via environment variables:
 |----------|---------|-------------|
 | `EVAL_MODEL` | `claude-sonnet-4-6` | Model to evaluate |
 | `ANTHROPIC_API_KEY` | `unspecified` | API key (optional with gateway) |
-| `ANTHROPIC_BASE_URL` | `https://api.anthropic.com` | API endpoint |
+| `ANTHROPIC_BASE_URL` | `http://169.254.169.254/gateway/llm/anthropic` | API endpoint ([exe.dev LLM gateway](https://exe.dev/docs/shelley/llm-gateway)) |
 
 ## License
 
