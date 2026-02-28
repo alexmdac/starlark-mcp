@@ -8,6 +8,20 @@ import (
 	"strings"
 )
 
+// maxTier is the number of difficulty tiers. When adding a new tier, bump this
+// and add the label to tierNames and cases to the cases slice below.
+const maxTier = 6
+
+// tierNames maps tier numbers to their display labels.
+var tierNames = map[int]string{
+	1: "BASICS",
+	2: "SIMPLE ALGORITHMS",
+	3: "INTERMEDIATE",
+	4: "HARD",
+	5: "EXPERT",
+	6: "CHALLENGING",
+}
+
 // evalCase describes a single eval case: a prompt for the LLM and a judge function.
 type evalCase struct {
 	name   string
@@ -599,5 +613,140 @@ var cases = []evalCase{
 			mat 1
 			on 1
 		`)),
+	},
+
+	// ── Tier 6: Challenging ──
+	{
+		name: "look_and_say",
+		tier: 6,
+		prompt: dedent(`
+			Generate the look-and-say sequence starting from "1". Print terms 1
+			through 12, one per line. The look-and-say sequence works by describing
+			the previous term: "1" becomes "11" (one 1), "11" becomes "21"
+			(two 1s), "21" becomes "1211" (one 2, one 1), etc.
+			Print only the 12 terms, one per line, nothing else.
+		`),
+		judge: exactOutput(dedent(`
+			1
+			11
+			21
+			1211
+			111221
+			312211
+			13112221
+			1113213211
+			31131211131221
+			13211311123113112211
+			11131221133112132113212221
+			3113112221232112111312211312113211
+		`)),
+	},
+	{
+		name: "maze_bfs",
+		tier: 6,
+		prompt: dedent(`
+			Find the length of the shortest path from S to E in this maze.
+			You may move up, down, left, or right. '#' is a wall, '.' is open.
+
+			################
+			#S.#.....#.....#
+			#.##.###.#.###.#
+			#....#.#...#...#
+			####.#.#.###.#.#
+			#....#.....#.#.#
+			#.####.###.#.#.#
+			#.#....#.#...#.#
+			#.#.####.###.#.#
+			#.#........#.#.#
+			#.########.#...#
+			#..........#..E#
+			################
+
+			Print only the number of steps in the shortest path, nothing else.
+		`),
+		judge: exactOutput("27"),
+	},
+	{
+		name: "shunting_yard",
+		tier: 6,
+		prompt: dedent(`
+			Evaluate these arithmetic expressions respecting standard operator
+			precedence (* and / before + and -). All operators are left-associative.
+			Use integer division (round toward zero). Parenthesized tokens are
+			space-separated (e.g. "( 2 + 3 )"). Print each result on its own
+			line, in order.
+
+			( 2 + 3 ) * ( 4 - 1 )
+			10 * ( 6 + 3 ) / ( 2 + 1 )
+			( ( 3 + 5 ) * 2 - 4 ) / ( 1 + 1 )
+			8 / ( 4 - 2 ) + 3 * ( 1 + 2 )
+
+			Print only the four numbers, one per line, nothing else.
+		`),
+		judge: exactOutput(dedent(`
+			15
+			30
+			6
+			13
+		`)),
+	},
+	{
+		name: "determinant_6x6",
+		tier: 6,
+		prompt: dedent(`
+			Compute the determinant of this 6x6 matrix:
+			[[2, 1, 3, 4, 1, 2],
+			 [1, 3, 2, 1, 4, 1],
+			 [3, 2, 1, 2, 1, 3],
+			 [4, 1, 2, 3, 2, 1],
+			 [1, 4, 1, 2, 3, 2],
+			 [2, 1, 3, 1, 2, 4]]
+			Print only the integer result, nothing else.
+		`),
+		judge: exactOutput("95"),
+	},
+	{
+		name: "dijkstra",
+		tier: 6,
+		prompt: dedent(`
+			Find the shortest path distances from node A to all other nodes in
+			this weighted undirected graph using Dijkstra's algorithm.
+
+			Edges (node1-node2: weight):
+			A-B: 4, A-C: 2, B-D: 5, B-E: 10, C-D: 8, C-F: 3,
+			D-E: 2, D-F: 1, E-G: 6, F-G: 7, F-H: 4, G-H: 1
+
+			Print one line per node (A through H in order), in the format
+			"X D" where X is the node name and D is the shortest distance
+			from A. Print only these 8 lines, nothing else.
+		`),
+		judge: exactOutput(dedent(`
+			A 0
+			B 4
+			C 2
+			D 6
+			E 8
+			F 5
+			G 10
+			H 9
+		`)),
+	},
+	{
+		name: "stack_vm",
+		tier: 6,
+		prompt: dedent(`
+			Implement a stack-based virtual machine and execute this program.
+			Instructions are comma-separated. The operations are:
+			- PUSH n: push integer n onto the stack
+			- ADD: pop a (top), pop b (second), push b + a
+			- SUB: pop a (top), pop b (second), push b - a
+			- MUL: pop a (top), pop b (second), push b * a
+			- DUP: duplicate the top of stack
+
+			Program: PUSH 5, PUSH 3, PUSH 2, MUL, ADD, DUP, PUSH 1, SUB, MUL
+
+			Print only the value on top of the stack after execution, nothing else.
+		`),
+		judge: exactOutput("110"),
 	},
 }

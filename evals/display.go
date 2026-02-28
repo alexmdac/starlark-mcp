@@ -126,13 +126,6 @@ func (d *display) render() {
 }
 
 func printSummary(model string, results []evalResult) {
-	tierNames := map[int]string{
-		1: "BASICS",
-		2: "SIMPLE ALGORITHMS",
-		3: "INTERMEDIATE",
-		4: "HARD",
-		5: "EXPERT",
-	}
 
 	// Find the longest case name for column sizing.
 	nameWidth := 4 // minimum for "NAME"
@@ -158,7 +151,7 @@ func printSummary(model string, results []evalResult) {
 	totalTokensIn := 0
 	totalTokensOut := 0
 
-	for tier := 1; tier <= 5; tier++ {
+	for tier := 1; tier <= maxTier; tier++ {
 		var tierResults []evalResult
 		for _, r := range results {
 			if r.ec.tier == tier {
