@@ -1,5 +1,4 @@
-//go:build eval
-
+// Command eval runs the LLM eval harness against the Starlark MCP server.
 package main
 
 import (
@@ -9,10 +8,10 @@ import (
 	"math"
 	"os"
 	"strings"
-	"testing"
 	"time"
 
 	"github.com/alexmdac/starlark-mcp/evals"
+	"github.com/alexmdac/starlark-mcp/server"
 )
 
 type evalResult struct {
@@ -25,8 +24,12 @@ type evalResult struct {
 	TokensOut int
 }
 
-func TestEval(t *testing.T) {
+func main() {
 	apiKey := os.Getenv("ANTHROPIC_API_KEY")
+	if apiKey == "" {
+		fmt.Fprintln(os.Stderr, "ANTHROPIC_API_KEY is required")
+		os.Exit(1)
+	}
 
 	model := os.Getenv("EVAL_MODEL")
 	if model == "" {
@@ -42,31 +45,21 @@ func TestEval(t *testing.T) {
 
 	results := make([]evalResult, len(evals.Cases))
 
-	t.Run("cases", func(t *testing.T) {
-		for i, ec := range evals.Cases {
-			ec := ec
-			i := i
-			t.Run(ec.Name, func(t *testing.T) {
-				t.Parallel()
-				result := runEval(t, client, ec)
-				results[i] = result
-				if !result.Passed {
-					t.Errorf("eval case %q failed after %d attempts", ec.Name, result.Attempts)
-					for j, out := range result.Outputs {
-						t.Logf("  attempt %d output: %q", j+1, out)
-					}
-				}
-			})
+	// Run cases sequentially (simple; parallelism can be added later with goroutines).
+	for i, ec := range evals.Cases {
+		fmt.Fprintf(os.Stderr, "Running %s...\n", ec.Name)
+		results[i] = runEval(client, ec)
+		mark := "\u2717"
+		if results[i].Passed {
+			mark = "\u2713"
 		}
-	})
+		fmt.Fprintf(os.Stderr, "  %s (attempts: %d)\n", mark, results[i].Attempts)
+	}
 
-	// Print summary table (all subtests have completed).
-	printSummary(t, model, results)
+	printSummary(model, results)
 }
 
-func runEval(t *testing.T, client *evals.Client, ec evals.Case) evalResult {
-	t.Helper()
-
+func runEval(client *evals.Client, ec evals.Case) evalResult {
 	const maxAttempts = 3
 	const maxIterations = 6
 
@@ -74,11 +67,11 @@ func runEval(t *testing.T, client *evals.Client, ec evals.Case) evalResult {
 		"Use the tool to write and run a Starlark program that produces the requested output. " +
 		"Do not explain your work \u2014 just call the tool." +
 		"\n\nThe following documentation describes the built-in functions available:\n\n" +
-		builtinsDocumentation
+		server.BuiltinsDocumentation
 
 	toolDef := evals.ToolDef{
 		Name:        "execute-starlark",
-		Description: executeStarlarkDescription,
+		Description: server.ExecuteStarlarkDescription,
 		InputSchema: map[string]any{
 			"type": "object",
 			"properties": map[string]any{
@@ -118,7 +111,8 @@ func runEval(t *testing.T, client *evals.Client, ec evals.Case) evalResult {
 
 		resp, err := client.SendRequest(context.Background(), req)
 		if err != nil {
-			t.Fatalf("API request failed: %v", err)
+			fmt.Fprintf(os.Stderr, "API request failed for %s: %v\n", ec.Name, err)
+			break
 		}
 
 		result.TokensIn += resp.Usage.InputTokens
@@ -148,19 +142,19 @@ func runEval(t *testing.T, client *evals.Client, ec evals.Case) evalResult {
 		// Parse tool input.
 		var input evals.ToolInput
 		if err := json.Unmarshal(toolUse.Input, &input); err != nil {
-			t.Fatalf("failed to parse tool input: %v", err)
+			fmt.Fprintf(os.Stderr, "failed to parse tool input for %s: %v\n", ec.Name, err)
+			break
 		}
 
 		// Execute with a fixed 30s timeout.
 		execCtx, execCancel := context.WithTimeout(context.Background(), 30*time.Second)
-		output, execErr := executeStarlark(execCtx, input.Program)
+		output, execErr := server.ExecuteStarlark(execCtx, input.Program)
 		execCancel()
 
 		result.Attempts++
 
 		if execErr != nil {
 			result.Outputs = append(result.Outputs, fmt.Sprintf("ERROR: %v", execErr))
-			// Append error tool result.
 			messages = append(messages, evals.Message{
 				Role: "user",
 				Content: []map[string]any{
@@ -195,21 +189,17 @@ func runEval(t *testing.T, client *evals.Client, ec evals.Case) evalResult {
 	return result
 }
 
-func printSummary(t *testing.T, model string, results []evalResult) {
-	t.Helper()
-
-	var sb strings.Builder
-
-	sb.WriteString("\n" + strings.Repeat("═", 62) + "\n")
-	sb.WriteString(fmt.Sprintf("EVAL RESULTS — model: %s\n", model))
-	sb.WriteString(strings.Repeat("═", 62) + "\n")
-
+func printSummary(model string, results []evalResult) {
 	tierNames := map[int]string{
 		1: "BASICS",
 		2: "SIMPLE ALGORITHMS",
 		3: "INTERMEDIATE",
 		4: "HARD",
 	}
+
+	fmt.Printf("\n%s\n", strings.Repeat("\u2550", 62))
+	fmt.Printf("EVAL RESULTS \u2014 model: %s\n", model)
+	fmt.Println(strings.Repeat("\u2550", 62))
 
 	totalPassed := 0
 	totalCases := 0
@@ -218,7 +208,6 @@ func printSummary(t *testing.T, model string, results []evalResult) {
 	totalTokensOut := 0
 
 	for tier := 1; tier <= 4; tier++ {
-		// Gather results for this tier.
 		var tierResults []evalResult
 		for _, r := range results {
 			if r.Case.Tier == tier {
@@ -229,43 +218,40 @@ func printSummary(t *testing.T, model string, results []evalResult) {
 			continue
 		}
 
-		sb.WriteString(fmt.Sprintf("\nTIER %d: %s\n", tier, tierNames[tier]))
+		fmt.Printf("\nTIER %d: %s\n", tier, tierNames[tier])
 
 		tierPassed := 0
 		tierTotal := len(tierResults)
 		tierScore := 0.0
 
 		for _, r := range tierResults {
-			mark := "✗"
+			mark := "\u2717"
 			if r.Passed {
-				mark = "✓"
+				mark = "\u2713"
 				tierPassed++
 			}
-			// Pad name to 35 chars for alignment.
 			name := r.Case.Name
 			padding := 35 - len(name)
 			if padding < 1 {
 				padding = 1
 			}
-			sb.WriteString(fmt.Sprintf("  %s %s%s attempts: %d  score: %.2f\n",
-				mark, name, strings.Repeat(" ", padding), r.Attempts, r.Score))
+			fmt.Printf("  %s %s%s attempts: %d  score: %.2f\n",
+				mark, name, strings.Repeat(" ", padding), r.Attempts, r.Score)
 			tierScore += r.Score
 			totalTokensIn += r.TokensIn
 			totalTokensOut += r.TokensOut
 		}
 
-		sb.WriteString(fmt.Sprintf("  Tier score: %.2f (%d/%d passed)\n",
-			tierScore/float64(tierTotal), tierPassed, tierTotal))
+		fmt.Printf("  Tier score: %.2f (%d/%d passed)\n",
+			tierScore/float64(tierTotal), tierPassed, tierTotal)
 
 		totalPassed += tierPassed
 		totalCases += tierTotal
 		totalScore += tierScore
 	}
 
-	sb.WriteString("\n" + strings.Repeat("─", 62) + "\n")
-	sb.WriteString(fmt.Sprintf("OVERALL: %.2f (%d/%d passed)  tokens: %d in, %d out\n",
-		totalScore/float64(totalCases), totalPassed, totalCases, totalTokensIn, totalTokensOut))
-	sb.WriteString(strings.Repeat("─", 62) + "\n")
-
-	t.Logf("%s", sb.String())
+	fmt.Printf("\n%s\n", strings.Repeat("\u2500", 62))
+	fmt.Printf("OVERALL: %.2f (%d/%d passed)  tokens: %d in, %d out\n",
+		totalScore/float64(totalCases), totalPassed, totalCases, totalTokensIn, totalTokensOut)
+	fmt.Println(strings.Repeat("\u2500", 62))
 }

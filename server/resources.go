@@ -1,4 +1,4 @@
-package main
+package server
 
 import (
 	"context"
@@ -10,10 +10,10 @@ import (
 )
 
 //go:embed builtins.md
-var builtinsDocumentation string
+var BuiltinsDocumentation string
 
 var embeddedResources = map[string]string{
-	"builtins": builtinsDocumentation,
+	"builtins": BuiltinsDocumentation,
 }
 
 func embeddedResource(_ context.Context, req *mcp.ReadResourceRequest) (*mcp.ReadResourceResult, error) {

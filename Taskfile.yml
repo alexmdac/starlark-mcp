@@ -60,4 +60,4 @@ tasks:
   eval:
     desc: Run LLM evals (requires ANTHROPIC_API_KEY)
     cmds:
-      - go test -tags eval -run TestEval -v -timeout 30m
+      - go run ./cmd/eval

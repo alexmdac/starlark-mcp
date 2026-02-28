@@ -1,4 +1,4 @@
-package main
+package server
 
 import (
 	"context"
@@ -27,7 +27,7 @@ func TestBuiltins(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			result, err := executeStarlark(context.Background(), tc.code)
+			result, err := ExecuteStarlark(context.Background(), tc.code)
 
 			if tc.expectedErr != "" {
 				if err == nil {
