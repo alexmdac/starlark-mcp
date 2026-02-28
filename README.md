@@ -73,6 +73,24 @@ See all available tasks:
 task --list
 ```
 
+### Evals
+
+The project includes an LLM eval harness that measures how effectively models
+use the `execute_starlark` tool. It runs 30 test cases across 5 difficulty tiers
+and produces a scored summary.
+
+```sh
+task eval
+```
+
+Configuration via environment variables:
+
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `EVAL_MODEL` | `claude-sonnet-4-6` | Model to evaluate |
+| `ANTHROPIC_API_KEY` | `unspecified` | API key (optional with gateway) |
+| `ANTHROPIC_BASE_URL` | `https://api.anthropic.com` | API endpoint |
+
 ## License
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
