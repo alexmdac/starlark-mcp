@@ -376,9 +376,23 @@ func printSummary(model string, results []evalResult) {
 		4: "HARD",
 	}
 
-	fmt.Printf("\n%s%s%s\n", colorCyan, strings.Repeat("═", 92), colorReset)
+	// Find the longest case name for column sizing.
+	nameWidth := 4 // minimum for "NAME"
+	for _, r := range results {
+		if len(r.Case.Name) > nameWidth {
+			nameWidth = len(r.Case.Name)
+		}
+	}
+
+	//  " ✔ %-Ns  %5s  %5s  %7s  %8s"
+	tableWidth := 3 + nameWidth + 2 + 5 + 2 + 5 + 2 + 7 + 2 + 8
+	headerFmt := fmt.Sprintf("%%s   %%-%ds  %%5s  %%5s  %%7s  %%8s%%s\n", nameWidth)
+	rowFmt := fmt.Sprintf(" %%s%%s%%s %%-%ds  %%s%%5d  %%5.2f  %%6.1fs  %%7.1fs%%s\n", nameWidth)
+
+	fmt.Printf("\n%s%s%s\n", colorCyan, strings.Repeat("═", tableWidth), colorReset)
 	fmt.Printf("%s%sEVAL RESULTS — model: %s%s\n", colorBold, colorCyan, model, colorReset)
-	fmt.Printf("%s%s%s\n", colorCyan, strings.Repeat("═", 92), colorReset)
+	fmt.Printf("%s%s%s\n", colorCyan, strings.Repeat("═", tableWidth), colorReset)
+	fmt.Printf(headerFmt, colorDim, "NAME", "TRIES", "SCORE", "LLM", "STARLARK", colorReset)
 
 	totalPassed := 0
 	totalCases := 0
@@ -416,19 +430,14 @@ func printSummary(model string, results []evalResult) {
 				mark = "✘"
 				color = colorRed
 			}
-			name := r.Case.Name
-			padding := 35 - len(name)
-			if padding < 1 {
-				padding = 1
-			}
-			fmt.Printf("  %s%s%s %s%s%sattempts: %d  score: %.2f  llm: %.1fs  starlark: %.1fs%s\n",
-				color, mark, colorReset, name, strings.Repeat(" ", padding), colorDim, r.Attempts, r.Score, r.LLMTime.Seconds(), r.StarlarkTime.Seconds(), colorReset)
+			fmt.Printf(rowFmt,
+				color, mark, colorReset, r.Case.Name, colorDim, r.Attempts, r.Score, r.LLMTime.Seconds(), r.StarlarkTime.Seconds(), colorReset)
 			tierScore += r.Score
 			totalTokensIn += r.TokensIn
 			totalTokensOut += r.TokensOut
 		}
 
-		fmt.Printf("  %sTier score: %.2f (%d/%d passed)%s\n",
+		fmt.Printf("   %sTier score: %.2f (%d/%d passed)%s\n",
 			colorDim, tierScore/float64(tierTotal), tierPassed, tierTotal, colorReset)
 
 		totalPassed += tierPassed
@@ -436,8 +445,8 @@ func printSummary(model string, results []evalResult) {
 		totalScore += tierScore
 	}
 
-	fmt.Printf("\n%s%s%s\n", colorCyan, strings.Repeat("─", 92), colorReset)
+	fmt.Printf("\n%s%s%s\n", colorCyan, strings.Repeat("─", tableWidth), colorReset)
 	fmt.Printf("%s%sOVERALL: %.2f (%d/%d passed)  tokens: %d in, %d out%s\n",
 		colorBold, colorCyan, totalScore/float64(totalCases), totalPassed, totalCases, totalTokensIn, totalTokensOut, colorReset)
-	fmt.Printf("%s%s%s\n", colorCyan, strings.Repeat("─", 92), colorReset)
+	fmt.Printf("%s%s%s\n", colorCyan, strings.Repeat("─", tableWidth), colorReset)
 }
