@@ -31,6 +31,6 @@ main()
 
 ## Available Features
 
-* Most Python string methods (`.upper()`, `.lower()`, `.strip()`, `.replace()`, `.split()`, `.join()`, `.format()`). Missing: `.rjust()`, `.ljust()`, `.center()`
+* Most Python string methods work. Missing: `.rjust()`, `.ljust()`, `.center()`
 * List comprehensions: `[f(x) for x in items]`
 * Math module: `load("math", "sqrt", "pow", "sin", "cos", "log", "ceil", "floor", "pi", "e")`
