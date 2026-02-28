@@ -56,3 +56,8 @@ tasks:
   ci:
     desc: Run all CI checks
     deps: [check, test-msan, test-asan]
+
+  eval:
+    desc: Run LLM evals (requires ANTHROPIC_API_KEY)
+    cmds:
+      - go test -tags eval -run TestEval -v -timeout 30m
