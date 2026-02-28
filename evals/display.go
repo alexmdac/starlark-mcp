@@ -13,15 +13,15 @@ import (
 
 // display manages live terminal output for eval progress.
 type display struct {
-	mu         sync.Mutex
-	cases      []evalCase
-	sorted     []int // indices into cases, sorted lexicographically
-	startTimes []time.Time
-	numRuns    int
+	mu           sync.Mutex
+	cases        []evalCase
+	sorted       []int // indices into cases, sorted lexicographically
+	startTimes   []time.Time
+	numRuns      int
 	runsDone     []int
 	runsPassed   []int
 	runDurations [][]time.Duration
-	stopCh     chan struct{}
+	stopCh       chan struct{}
 }
 
 func newDisplay(cs []evalCase, numRuns int) *display {
@@ -34,14 +34,14 @@ func newDisplay(cs []evalCase, numRuns int) *display {
 		return cs[sorted[a]].name < cs[sorted[b]].name
 	})
 	d := &display{
-		cases:      cs,
-		sorted:     sorted,
-		startTimes: make([]time.Time, len(cs)),
-		numRuns:    numRuns,
+		cases:        cs,
+		sorted:       sorted,
+		startTimes:   make([]time.Time, len(cs)),
+		numRuns:      numRuns,
 		runsDone:     make([]int, len(cs)),
 		runsPassed:   make([]int, len(cs)),
 		runDurations: make([][]time.Duration, len(cs)),
-		stopCh:     make(chan struct{}),
+		stopCh:       make(chan struct{}),
 	}
 	for i := range cs {
 		d.startTimes[i] = now
