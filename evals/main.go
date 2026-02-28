@@ -50,9 +50,9 @@ func main() {
 	for i, ec := range Cases {
 		fmt.Fprintf(os.Stderr, "Running %s...\n", ec.Name)
 		results[i] = runEval(client, ec)
-		mark := "\u2717"
+		mark := "✗"
 		if results[i].Passed {
-			mark = "\u2713"
+			mark = "✓"
 		}
 		fmt.Fprintf(os.Stderr, "  %s (attempts: %d)\n", mark, results[i].Attempts)
 	}
@@ -66,7 +66,7 @@ func runEval(client *Client, ec Case) evalResult {
 
 	systemPrompt := "You are solving a programming task using the execute-starlark tool. " +
 		"Use the tool to write and run a Starlark program that produces the requested output. " +
-		"Do not explain your work \u2014 just call the tool." +
+		"Do not explain your work — just call the tool." +
 		"\n\nThe following documentation describes the built-in functions available:\n\n" +
 		server.BuiltinsDocumentation
 
@@ -198,9 +198,9 @@ func printSummary(model string, results []evalResult) {
 		4: "HARD",
 	}
 
-	fmt.Printf("\n%s\n", strings.Repeat("\u2550", 62))
-	fmt.Printf("EVAL RESULTS \u2014 model: %s\n", model)
-	fmt.Println(strings.Repeat("\u2550", 62))
+	fmt.Printf("\n%s\n", strings.Repeat("═", 62))
+	fmt.Printf("EVAL RESULTS — model: %s\n", model)
+	fmt.Println(strings.Repeat("═", 62))
 
 	totalPassed := 0
 	totalCases := 0
@@ -226,9 +226,9 @@ func printSummary(model string, results []evalResult) {
 		tierScore := 0.0
 
 		for _, r := range tierResults {
-			mark := "\u2717"
+			mark := "✗"
 			if r.Passed {
-				mark = "\u2713"
+				mark = "✓"
 				tierPassed++
 			}
 			name := r.Case.Name
@@ -251,8 +251,8 @@ func printSummary(model string, results []evalResult) {
 		totalScore += tierScore
 	}
 
-	fmt.Printf("\n%s\n", strings.Repeat("\u2500", 62))
+	fmt.Printf("\n%s\n", strings.Repeat("─", 62))
 	fmt.Printf("OVERALL: %.2f (%d/%d passed)  tokens: %d in, %d out\n",
 		totalScore/float64(totalCases), totalPassed, totalCases, totalTokensIn, totalTokensOut)
-	fmt.Println(strings.Repeat("\u2500", 62))
+	fmt.Println(strings.Repeat("─", 62))
 }
