@@ -46,6 +46,22 @@ func TestDescription_Works(t *testing.T) {
 		{"math cos", `load("math", "cos"); print(cos(0))`, "1.0"},
 		{"math ceil", `load("math", "ceil"); print(ceil(1.5))`, "2"},
 		{"math floor", `load("math", "floor"); print(floor(1.5))`, "1"},
+		{"top-level for loop", `for i in range(3): print(i)`, "0\n1\n2"},
+		{"top-level if", `if True: print("yes")`, "yes"},
+		{"while loop", dedent(`
+			def main():
+			    x = 0
+			    while x < 3:
+			        x += 1
+			    print(x)
+			main()
+		`), "3"},
+		{"recursion", dedent(`
+			def fact(n):
+			    if n <= 1: return 1
+			    return n * fact(n - 1)
+			print(fact(5))
+		`), "120"},
 	}
 
 	for _, tc := range tests {
@@ -67,8 +83,6 @@ func TestDescription_Errors(t *testing.T) {
 		program string
 		errMsg  string
 	}{
-		{"top-level for loop", `for i in range(1): print(i)`, "for loop not within a function"},
-		{"top-level if", `if True: print("yes")`, "if statement not within a function"},
 		{"operator chaining", `print(1 < 2 < 3)`, "does not associate with"},
 		{"f-strings", dedent(`
 			def main():
@@ -77,19 +91,6 @@ func TestDescription_Errors(t *testing.T) {
 			main()
 		`), "got string literal"},
 		{"star unpacking", `a, *b = [1, 2, 3]`, "got '*'"},
-		{"while loop", dedent(`
-			def main():
-			    x = 0
-			    while x < 3:
-			        x += 1
-			main()
-		`), "does not support while loops"},
-		{"recursion", dedent(`
-			def fact(n):
-			    if n <= 1: return 1
-			    return n * fact(n - 1)
-			print(fact(5))
-		`), "called recursively"},
 		{"class", `class Foo: pass`, "got class"},
 		{"power operator", `print(2 ** 10)`, "got '**'"},
 		{"no sum builtin", `print(sum([1,2,3]))`, "undefined: sum"},
