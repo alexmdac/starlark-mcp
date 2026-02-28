@@ -39,7 +39,7 @@ func main() {
 
 	model := os.Getenv("EVAL_MODEL")
 	if model == "" {
-		model = "claude-sonnet-4-20250514"
+		model = "claude-sonnet-4-6"
 	}
 
 	baseURL := os.Getenv("ANTHROPIC_BASE_URL")
