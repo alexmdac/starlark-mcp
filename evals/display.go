@@ -290,8 +290,9 @@ func printSummaryTable(model string, numRuns int, nameWidth int, results []caseR
 				fmt.Printf("%sRun %d: no output%s\n", colorDim, f.index+1, colorReset)
 				continue
 			}
-			last := f.r.Outputs[len(f.r.Outputs)-1]
-			fmt.Printf("%sRun %d (last output):%s\n%s\n", colorDim, f.index+1, colorReset, last)
+			for ai, out := range f.r.Outputs {
+				fmt.Printf("%sRun %d, attempt %d:%s\n%s\n", colorDim, f.index+1, ai+1, colorReset, out)
+			}
 		}
 	}
 }
