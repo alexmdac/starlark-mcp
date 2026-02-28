@@ -1,1 +1,29 @@
+# Build output
 tmp/
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+starlark-mcp
+
+# Test output
+*.test
+*.out
+coverage.html
+
+# Go workspace
+go.work
+go.work.sum
+
+# IDE / editor
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Environment
+.env
+.env.*
