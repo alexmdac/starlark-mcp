@@ -4,19 +4,13 @@ import (
 	"context"
 	"log"
 
+	"github.com/alexmdac/starlark-mcp/server"
 	"github.com/modelcontextprotocol/go-sdk/mcp"
 )
 
-func newMCPServer() *mcp.Server {
-	server := mcp.NewServer(&mcp.Implementation{Name: "starlark-mcp"}, nil)
-	addEmbeddedResources(server)
-	addExecuteStarlarkTool(server)
-	return server
-}
-
 func main() {
-	server := newMCPServer()
-	if err := server.Run(context.Background(), &mcp.StdioTransport{}); err != nil {
+	s := server.New()
+	if err := s.Run(context.Background(), &mcp.StdioTransport{}); err != nil {
 		log.Fatal(err)
 	}
 }

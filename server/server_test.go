@@ -1,4 +1,4 @@
-package main
+package server
 
 import (
 	"strings"
@@ -11,10 +11,10 @@ func startTestServer(t *testing.T) *mcp.ClientSession {
 	t.Helper()
 
 	t1, t2 := mcp.NewInMemoryTransports()
-	server := newMCPServer()
+	s := New()
 	client := mcp.NewClient(&mcp.Implementation{Name: "test client"}, nil)
 
-	serverSession, err := server.Connect(t.Context(), t1, nil)
+	serverSession, err := s.Connect(t.Context(), t1, nil)
 	if err != nil {
 		t.Fatalf("Failed to connect server: %v", err)
 	}

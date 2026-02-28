@@ -56,3 +56,8 @@ tasks:
   ci:
     desc: Run all CI checks
     deps: [check, test-msan, test-asan]
+
+  eval:
+    desc: Run LLM evals
+    cmds:
+      - go run -tags eval ./evals

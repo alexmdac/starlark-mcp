@@ -11,7 +11,7 @@ attractive option for executing LLM-generated code.
 Programs can emit text output using the `print()` function, which is captured
 and returned to the LLM client. Output is limited to 16KB.
 
-The server augments Starlark with some [builtin functions](builtins.md).
+The server augments Starlark with some [builtin functions](server/builtins.md).
 
 ## Installation
 
@@ -72,6 +72,24 @@ See all available tasks:
 ```sh
 task --list
 ```
+
+### Evals
+
+The project includes an LLM eval harness that measures how effectively models
+use the `execute_starlark` tool. It runs 30 test cases across 5 difficulty tiers
+and produces a scored summary.
+
+```sh
+task eval
+```
+
+Configuration via environment variables:
+
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `EVAL_MODEL` | `claude-sonnet-4-6` | Model to evaluate |
+| `ANTHROPIC_API_KEY` | `unspecified` | API key (optional with gateway) |
+| `ANTHROPIC_BASE_URL` | `https://api.anthropic.com` | API endpoint |
 
 ## License
 
