@@ -88,9 +88,11 @@ func main() {
 				sem <- struct{}{}
 				defer func() { <-sem }()
 
+				start := time.Now()
 				res := runSingleEval(ctx, llm, ec)
+				res.Duration = time.Since(start)
 				allResults[i].Runs[r] = res
-				disp.finishRun(i, res.Passed)
+				disp.finishRun(i, res.Passed, res.Duration)
 			}()
 		}
 	}
