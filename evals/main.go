@@ -370,9 +370,9 @@ func printSummary(model string, results []evalResult) {
 		4: "HARD",
 	}
 
-	fmt.Printf("\n%s%s%s\n", colorCyan, strings.Repeat("═", 62), colorReset)
+	fmt.Printf("\n%s%s%s\n", colorCyan, strings.Repeat("═", 72), colorReset)
 	fmt.Printf("%s%sEVAL RESULTS — model: %s%s\n", colorBold, colorCyan, model, colorReset)
-	fmt.Printf("%s%s%s\n", colorCyan, strings.Repeat("═", 62), colorReset)
+	fmt.Printf("%s%s%s\n", colorCyan, strings.Repeat("═", 72), colorReset)
 
 	totalPassed := 0
 	totalCases := 0
@@ -427,8 +427,8 @@ func printSummary(model string, results []evalResult) {
 		totalScore += tierScore
 	}
 
-	fmt.Printf("\n%s%s%s\n", colorCyan, strings.Repeat("─", 62), colorReset)
+	fmt.Printf("\n%s%s%s\n", colorCyan, strings.Repeat("─", 72), colorReset)
 	fmt.Printf("%s%sOVERALL: %.2f (%d/%d passed)  tokens: %d in, %d out%s\n",
 		colorBold, colorCyan, totalScore/float64(totalCases), totalPassed, totalCases, totalTokensIn, totalTokensOut, colorReset)
-	fmt.Printf("%s%s%s\n", colorCyan, strings.Repeat("─", 62), colorReset)
+	fmt.Printf("%s%s%s\n", colorCyan, strings.Repeat("─", 72), colorReset)
 }
