@@ -76,23 +76,23 @@ func (p *OpenAIClient) SendMessage(ctx context.Context, params *MessageParams) (
 // --- OpenAI wire types ---
 
 type openAIRequest struct {
-	Model    string            `json:"model"`
-	Messages []openAIMessage   `json:"messages"`
-	Tools    []openAIToolDef   `json:"tools,omitempty"`
+	Model     string          `json:"model"`
+	Messages  []openAIMessage `json:"messages"`
+	Tools     []openAIToolDef `json:"tools,omitempty"`
 	MaxTokens int             `json:"max_tokens,omitempty"`
 }
 
 type openAIMessage struct {
-	Role       string            `json:"role"`
-	Content    string            `json:"content,omitempty"`
-	ToolCalls  []openAIToolCall  `json:"tool_calls,omitempty"`
-	ToolCallID string            `json:"tool_call_id,omitempty"`
+	Role       string           `json:"role"`
+	Content    string           `json:"content,omitempty"`
+	ToolCalls  []openAIToolCall `json:"tool_calls,omitempty"`
+	ToolCallID string           `json:"tool_call_id,omitempty"`
 }
 
 type openAIToolCall struct {
-	ID       string              `json:"id"`
-	Type     string              `json:"type"`
-	Function openAIFunctionCall  `json:"function"`
+	ID       string             `json:"id"`
+	Type     string             `json:"type"`
+	Function openAIFunctionCall `json:"function"`
 }
 
 type openAIFunctionCall struct {
@@ -101,7 +101,7 @@ type openAIFunctionCall struct {
 }
 
 type openAIToolDef struct {
-	Type     string           `json:"type"`
+	Type     string            `json:"type"`
 	Function openAIFunctionDef `json:"function"`
 }
 

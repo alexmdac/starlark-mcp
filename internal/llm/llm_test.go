@@ -4,10 +4,10 @@ import "testing"
 
 func TestParseModel(t *testing.T) {
 	tests := []struct {
-		input      string
-		wantProv   string
-		wantModel  string
-		wantErr    bool
+		input     string
+		wantProv  string
+		wantModel string
+		wantErr   bool
 	}{
 		{"anthropic:claude-haiku-4-5", "anthropic", "claude-haiku-4-5", false},
 		{"openai:gpt-4o", "openai", "gpt-4o", false},

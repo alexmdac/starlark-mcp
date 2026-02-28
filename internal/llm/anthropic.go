@@ -76,11 +76,11 @@ func (p *AnthropicClient) SendMessage(ctx context.Context, params *MessageParams
 // --- Anthropic wire types ---
 
 type anthropicRequest struct {
-	Model     string               `json:"model"`
-	MaxTokens int                  `json:"max_tokens"`
-	System    string               `json:"system,omitempty"`
-	Messages  []anthropicMessage   `json:"messages"`
-	Tools     []anthropicToolDef   `json:"tools,omitempty"`
+	Model     string             `json:"model"`
+	MaxTokens int                `json:"max_tokens"`
+	System    string             `json:"system,omitempty"`
+	Messages  []anthropicMessage `json:"messages"`
+	Tools     []anthropicToolDef `json:"tools,omitempty"`
 }
 
 type anthropicMessage struct {
@@ -95,8 +95,8 @@ type anthropicToolDef struct {
 }
 
 type anthropicResponse struct {
-	Content    []anthropicContentBlock `json:"content"`
-	Usage      anthropicUsage          `json:"usage"`
+	Content []anthropicContentBlock `json:"content"`
+	Usage   anthropicUsage          `json:"usage"`
 }
 
 type anthropicContentBlock struct {
@@ -122,11 +122,7 @@ func (p *AnthropicClient) buildRequest(params *MessageParams) *anthropicRequest 
 
 	tools := make([]anthropicToolDef, len(params.Tools))
 	for i, t := range params.Tools {
-		tools[i] = anthropicToolDef{
-			Name:        t.Name,
-			Description: t.Description,
-			InputSchema: t.InputSchema,
-		}
+		tools[i] = anthropicToolDef(t)
 	}
 
 	return &anthropicRequest{

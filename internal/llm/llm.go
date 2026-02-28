@@ -24,8 +24,8 @@ type MessageParams struct {
 // Message is a single message in the conversation.
 type Message struct {
 	Role       Role
-	Text       string     // for user/assistant text
-	ToolCalls  []ToolCall // for assistant messages requesting tool use
+	Text       string      // for user/assistant text
+	ToolCalls  []ToolCall  // for assistant messages requesting tool use
 	ToolResult *ToolResult // for user messages returning tool results
 }
 
@@ -76,7 +76,7 @@ type Usage struct {
 func ParseModel(s string) (provider, model string, err error) {
 	i := strings.Index(s, ":")
 	if i < 0 {
-		return "", "", fmt.Errorf("model %q must have a provider prefix (e.g. \"anthropic:claude-haiku-4-5\" or \"openai:gpt-4o\")" , s)
+		return "", "", fmt.Errorf("model %q must have a provider prefix (e.g. \"anthropic:claude-haiku-4-5\" or \"openai:gpt-4o\")", s)
 	}
 	return s[:i], s[i+1:], nil
 }
