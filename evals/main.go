@@ -136,7 +136,7 @@ func newDisplay(cases []Case) *display {
 }
 
 func (d *display) loop() {
-	ticker := time.NewTicker(time.Second)
+	ticker := time.NewTicker(100 * time.Millisecond)
 	defer ticker.Stop()
 	for {
 		select {
