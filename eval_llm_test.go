@@ -118,16 +118,18 @@ type toolInput struct {
 
 // llmClient is a simple client for the Anthropic Messages API.
 type llmClient struct {
-	apiKey string
-	model  string
-	http   *http.Client
+	apiKey  string
+	model   string
+	baseURL string
+	http    *http.Client
 }
 
-func newLLMClient(apiKey, model string) *llmClient {
+func newLLMClient(apiKey, model, baseURL string) *llmClient {
 	return &llmClient{
-		apiKey: apiKey,
-		model:  model,
-		http:   &http.Client{},
+		apiKey:  apiKey,
+		model:   model,
+		baseURL: baseURL,
+		http:    &http.Client{},
 	}
 }
 
@@ -139,7 +141,7 @@ func (c *llmClient) sendRequest(ctx context.Context, req *apiRequest) (*apiRespo
 		return nil, fmt.Errorf("marshal request: %w", err)
 	}
 
-	httpReq, err := http.NewRequestWithContext(ctx, http.MethodPost, "https://api.anthropic.com/v1/messages", bytes.NewReader(body))
+	httpReq, err := http.NewRequestWithContext(ctx, http.MethodPost, c.baseURL+"/v1/messages", bytes.NewReader(body))
 	if err != nil {
 		return nil, fmt.Errorf("create request: %w", err)
 	}

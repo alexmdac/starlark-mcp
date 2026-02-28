@@ -34,7 +34,12 @@ func TestEval(t *testing.T) {
 		model = "claude-sonnet-4-20250514"
 	}
 
-	client := newLLMClient(apiKey, model)
+	baseURL := os.Getenv("ANTHROPIC_BASE_URL")
+	if baseURL == "" {
+		baseURL = "https://api.anthropic.com"
+	}
+
+	client := newLLMClient(apiKey, model, baseURL)
 
 	results := make([]evalResult, len(evalCases))
 
