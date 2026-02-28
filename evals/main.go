@@ -59,7 +59,7 @@ func main() {
 
 	baseURL := *llmURLFlag
 
-	var provider llm.Provider
+	var client llm.Client
 	switch providerName {
 	case "anthropic":
 		if baseURL == "" {
@@ -69,7 +69,7 @@ func main() {
 		if apiKey == "" {
 			apiKey = "unspecified"
 		}
-		provider = llm.NewAnthropic(apiKey, model, baseURL)
+		client = llm.NewAnthropic(apiKey, model, baseURL)
 	case "openai":
 		if baseURL == "" {
 			baseURL = "https://api.openai.com"
@@ -79,7 +79,7 @@ func main() {
 			fmt.Fprintf(os.Stderr, "OPENAI_API_KEY is required for the openai provider\n")
 			os.Exit(1)
 		}
-		provider = llm.NewOpenAI(apiKey, model, baseURL)
+		client = llm.NewOpenAI(apiKey, model, baseURL)
 	default:
 		fmt.Fprintf(os.Stderr, "unknown provider: %q (supported: anthropic, openai)\n", providerName)
 		os.Exit(1)
@@ -111,7 +111,7 @@ func main() {
 				defer func() { <-sem }()
 
 				start := time.Now()
-				res := runSingleEval(ctx, provider, ec)
+				res := runSingleEval(ctx, client, ec)
 				res.Duration = time.Since(start)
 				allResults[i].Runs[r] = res
 				disp.finishRun(i, res.Passed, res.Duration)
@@ -125,7 +125,7 @@ func main() {
 }
 
 // runSingleEval sets up an isolated MCP session and runs a single eval case.
-func runSingleEval(ctx context.Context, provider llm.Provider, ec evalCase) evalResult {
+func runSingleEval(ctx context.Context, client llm.Client, ec evalCase) evalResult {
 	t1, t2 := mcp.NewInMemoryTransports()
 	srv := server.New()
 	mcpClient := mcp.NewClient(&mcp.Implementation{Name: "eval-client"}, nil)
@@ -144,7 +144,7 @@ func runSingleEval(ctx context.Context, provider llm.Provider, ec evalCase) eval
 		return evalResult{ec: ec}
 	}
 
-	return runEval(ctx, provider, session, toolDefs, ec)
+	return runEval(ctx, client, session, toolDefs, ec)
 }
 
 // mcpToolDefs calls ListTools on the MCP session and converts the results
@@ -236,7 +236,7 @@ func toolResultWithNudge(toolCallID, content, nudge string) llm.Message {
 	}
 }
 
-func runEval(ctx context.Context, provider llm.Provider, session *mcp.ClientSession, toolDefs []llm.ToolDef, ec evalCase) evalResult {
+func runEval(ctx context.Context, client llm.Client, session *mcp.ClientSession, toolDefs []llm.ToolDef, ec evalCase) evalResult {
 	const maxAttempts = 3
 	const maxIterations = 6
 
@@ -265,7 +265,7 @@ func runEval(ctx context.Context, provider llm.Provider, session *mcp.ClientSess
 		}
 
 		llmStart := time.Now()
-		resp, err := provider.SendMessage(ctx, params)
+		resp, err := client.SendMessage(ctx, params)
 		result.LLMTime += time.Since(llmStart)
 		if err != nil {
 			break

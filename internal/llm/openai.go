@@ -10,9 +10,9 @@ import (
 	"time"
 )
 
-// OpenAIProvider implements Provider for the OpenAI Chat Completions API
+// OpenAIClient implements Client for the OpenAI Chat Completions API
 // and any compatible endpoint.
-type OpenAIProvider struct {
+type OpenAIClient struct {
 	APIKey  string
 	Model   string
 	BaseURL string
@@ -20,9 +20,9 @@ type OpenAIProvider struct {
 	HTTP    *http.Client
 }
 
-// NewOpenAI creates an OpenAI-compatible provider.
-func NewOpenAI(apiKey, model, baseURL string) *OpenAIProvider {
-	return &OpenAIProvider{
+// NewOpenAI creates an OpenAI-compatible client.
+func NewOpenAI(apiKey, model, baseURL string) *OpenAIClient {
+	return &OpenAIClient{
 		APIKey:  apiKey,
 		Model:   model,
 		BaseURL: baseURL,
@@ -31,8 +31,8 @@ func NewOpenAI(apiKey, model, baseURL string) *OpenAIProvider {
 	}
 }
 
-// SendMessage implements Provider.
-func (p *OpenAIProvider) SendMessage(ctx context.Context, params *MessageParams) (*MessageResponse, error) {
+// SendMessage implements Client.
+func (p *OpenAIClient) SendMessage(ctx context.Context, params *MessageParams) (*MessageResponse, error) {
 	ctx, cancel := context.WithTimeout(ctx, p.Timeout)
 	defer cancel()
 
@@ -127,7 +127,7 @@ type openAIUsage struct {
 
 // --- conversion helpers ---
 
-func (p *OpenAIProvider) buildRequest(params *MessageParams) *openAIRequest {
+func (p *OpenAIClient) buildRequest(params *MessageParams) *openAIRequest {
 	var messages []openAIMessage
 
 	// System message.
@@ -211,7 +211,7 @@ func toOpenAIMessages(m Message) []openAIMessage {
 	return out
 }
 
-func (p *OpenAIProvider) parseResponse(resp *openAIResponse) (*MessageResponse, error) {
+func (p *OpenAIClient) parseResponse(resp *openAIResponse) (*MessageResponse, error) {
 	if len(resp.Choices) == 0 {
 		return nil, fmt.Errorf("no choices in response")
 	}

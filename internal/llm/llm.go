@@ -9,8 +9,8 @@ import (
 	"strings"
 )
 
-// Provider sends a message to an LLM and returns the response.
-type Provider interface {
+// Client sends a message to an LLM and returns the response.
+type Client interface {
 	SendMessage(ctx context.Context, params *MessageParams) (*MessageResponse, error)
 }
 

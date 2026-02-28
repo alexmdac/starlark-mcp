@@ -10,8 +10,8 @@ import (
 	"time"
 )
 
-// AnthropicProvider implements Provider for the Anthropic Messages API.
-type AnthropicProvider struct {
+// AnthropicClient implements Client for the Anthropic Messages API.
+type AnthropicClient struct {
 	APIKey  string
 	Model   string
 	BaseURL string
@@ -19,9 +19,9 @@ type AnthropicProvider struct {
 	HTTP    *http.Client
 }
 
-// NewAnthropic creates an Anthropic provider.
-func NewAnthropic(apiKey, model, baseURL string) *AnthropicProvider {
-	return &AnthropicProvider{
+// NewAnthropic creates an Anthropic client.
+func NewAnthropic(apiKey, model, baseURL string) *AnthropicClient {
+	return &AnthropicClient{
 		APIKey:  apiKey,
 		Model:   model,
 		BaseURL: baseURL,
@@ -30,8 +30,8 @@ func NewAnthropic(apiKey, model, baseURL string) *AnthropicProvider {
 	}
 }
 
-// SendMessage implements Provider.
-func (p *AnthropicProvider) SendMessage(ctx context.Context, params *MessageParams) (*MessageResponse, error) {
+// SendMessage implements Client.
+func (p *AnthropicClient) SendMessage(ctx context.Context, params *MessageParams) (*MessageResponse, error) {
 	ctx, cancel := context.WithTimeout(ctx, p.Timeout)
 	defer cancel()
 
@@ -114,7 +114,7 @@ type anthropicUsage struct {
 
 // --- conversion helpers ---
 
-func (p *AnthropicProvider) buildRequest(params *MessageParams) *anthropicRequest {
+func (p *AnthropicClient) buildRequest(params *MessageParams) *anthropicRequest {
 	messages := make([]anthropicMessage, len(params.Messages))
 	for i, m := range params.Messages {
 		messages[i] = toAnthropicMessage(m)
@@ -177,7 +177,7 @@ func toAnthropicMessage(m Message) anthropicMessage {
 	}
 }
 
-func (p *AnthropicProvider) parseResponse(resp *anthropicResponse) *MessageResponse {
+func (p *AnthropicClient) parseResponse(resp *anthropicResponse) *MessageResponse {
 	result := &MessageResponse{
 		Usage: Usage{
 			InputTokens:  resp.Usage.InputTokens,
