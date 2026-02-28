@@ -600,4 +600,139 @@ var cases = []evalCase{
 			on 1
 		`)),
 	},
+
+	// ── Tier 6: Challenging ──
+	{
+		name: "look_and_say",
+		tier: 6,
+		prompt: dedent(`
+			Generate the look-and-say sequence starting from "1". Print the first
+			10 terms (terms 1 through 10), one per line. The look-and-say sequence
+			works by describing the previous term: "1" becomes "11" (one 1),
+			"11" becomes "21" (two 1s), "21" becomes "1211" (one 2, one 1), etc.
+			Print only the 10 terms, one per line, nothing else.
+		`),
+		judge: exactOutput(dedent(`
+			1
+			11
+			21
+			1211
+			111221
+			312211
+			13112221
+			1113213211
+			31131211131221
+			13211311123113112211
+		`)),
+	},
+	{
+		name: "rule110",
+		tier: 6,
+		prompt: dedent(`
+			Simulate Rule 110, an elementary cellular automaton, on a row of 21
+			cells for 15 generations. The initial state has only the rightmost
+			cell set to 1 (all others 0). Cells outside the row are treated as 0.
+
+			Rule 110 maps each 3-cell neighborhood (left, center, right) to a new
+			value. Interpret the 3 cells as a 3-bit number (left*4 + center*2 +
+			right) and use it as an index into the binary representation of 110
+			(01101110): bit 0=0, bit 1=1, bit 2=1, bit 3=1, bit 4=0, bit 5=1,
+			bit 6=1, bit 7=0.
+
+			Print 16 rows (the initial state plus 15 generations), one per line,
+			with cells separated by spaces. Print only the grid, nothing else.
+		`),
+		judge: exactOutput(dedent(`
+			0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1
+			0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 1
+			0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 1 1
+			0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 1 0 1
+			0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 1 1 1 1
+			0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 1 0 0 0 1
+			0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 1 1 0 0 1 1
+			0 0 0 0 0 0 0 0 0 0 0 0 0 1 1 0 1 0 1 1 1
+			0 0 0 0 0 0 0 0 0 0 0 0 1 1 1 1 1 1 1 0 1
+			0 0 0 0 0 0 0 0 0 0 0 1 1 0 0 0 0 0 1 1 1
+			0 0 0 0 0 0 0 0 0 0 1 1 1 0 0 0 0 1 1 0 1
+			0 0 0 0 0 0 0 0 0 1 1 0 1 0 0 0 1 1 1 1 1
+			0 0 0 0 0 0 0 0 1 1 1 1 1 0 0 1 1 0 0 0 1
+			0 0 0 0 0 0 0 1 1 0 0 0 1 0 1 1 1 0 0 1 1
+			0 0 0 0 0 0 1 1 1 0 0 1 1 1 1 0 1 0 1 1 1
+			0 0 0 0 0 1 1 0 1 0 1 1 0 0 1 1 1 1 1 0 1
+		`)),
+	},
+	{
+		name: "maze_bfs",
+		tier: 6,
+		prompt: dedent(`
+			Find the length of the shortest path from S to E in this maze.
+			You may move up, down, left, or right. '#' is a wall, '.' is open.
+
+			########
+			#S.#...#
+			#.##.#.#
+			#....#.#
+			##.###.#
+			#..#...#
+			#.##.#E#
+			########
+
+			Print only the number of steps in the shortest path, nothing else.
+		`),
+		judge: exactOutput("14"),
+	},
+	{
+		name: "shunting_yard",
+		tier: 6,
+		prompt: dedent(`
+			Evaluate these arithmetic expressions respecting standard operator
+			precedence (* and / before + and -). All operators are left-associative.
+			Use integer division (round toward zero). Print each result on its own
+			line, in order.
+
+			2 + 3 * 4 - 8 / 2
+			10 * 2 + 3 * 4 - 5
+			100 - 90 + 2 * 3 * 4
+			7 + 8 / 4 * 2 - 1
+
+			Print only the four numbers, one per line, nothing else.
+		`),
+		judge: exactOutput(dedent(`
+			10
+			27
+			34
+			10
+		`)),
+	},
+	{
+		name: "determinant_4x4",
+		tier: 6,
+		prompt: dedent(`
+			Compute the determinant of this 4x4 matrix:
+			[[1, 2, 3, 4],
+			 [5, 6, 7, 8],
+			 [2, 6, 4, 8],
+			 [3, 1, 1, 2]]
+			Print only the integer result, nothing else.
+		`),
+		judge: exactOutput("72"),
+	},
+	{
+		name: "stack_vm",
+		tier: 6,
+		prompt: dedent(`
+			Implement a stack-based virtual machine and execute this program.
+			Instructions are comma-separated. The operations are:
+			- PUSH n: push integer n onto the stack
+			- ADD: pop top two values, push their sum
+			- SUB: pop a (top), pop b (second), push b - a
+			- MUL: pop a (top), pop b (second), push b * a
+			- DUP: duplicate the top of stack
+
+			Program: PUSH 5, PUSH 3, PUSH 2, MUL, ADD, DUP, PUSH 1, SUB, MUL
+
+			Print only the value on top of the stack after execution, nothing else.
+		`),
+		judge: exactOutput("110"),
+	},
 }
