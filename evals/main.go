@@ -8,6 +8,7 @@ import (
 	"encoding/json"
 	"flag"
 	"fmt"
+	"log"
 	"math"
 	"os"
 	"os/signal"
@@ -133,17 +134,17 @@ func runSingleEval(ctx context.Context, client llm.Client, ec evalCase) evalResu
 	mcpClient := mcp.NewClient(&mcp.Implementation{Name: "eval-client"}, nil)
 
 	if _, err := srv.Connect(ctx, t1, nil); err != nil {
-		return evalResult{ec: ec}
+		log.Fatalf("eval %s: server connect: %v", ec.name, err)
 	}
 	session, err := mcpClient.Connect(ctx, t2, nil)
 	if err != nil {
-		return evalResult{ec: ec}
+		log.Fatalf("eval %s: client connect: %v", ec.name, err)
 	}
 	defer session.Close()
 
 	toolDefs, err := mcpToolDefs(ctx, session)
 	if err != nil {
-		return evalResult{ec: ec}
+		log.Fatalf("eval %s: list tools: %v", ec.name, err)
 	}
 
 	return runEval(ctx, client, session, toolDefs, ec)
@@ -270,7 +271,7 @@ func runEval(ctx context.Context, client llm.Client, session *mcp.ClientSession,
 		resp, err := client.SendMessage(ctx, params)
 		result.LLMTime += time.Since(llmStart)
 		if err != nil {
-			break
+			log.Fatalf("eval %s: LLM call: %v", ec.name, err)
 		}
 
 		result.TokensIn += resp.Usage.InputTokens
