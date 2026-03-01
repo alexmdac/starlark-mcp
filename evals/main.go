@@ -10,8 +10,6 @@ import (
 	"math"
 	"os"
 	"os/signal"
-	"path/filepath"
-	"strconv"
 	"strings"
 	"sync"
 	"time"
@@ -43,6 +41,7 @@ type caseResults struct {
 const (
 	defaultAnthropicURL = "http://169.254.169.254/gateway/llm/anthropic"
 	defaultOpenAIURL    = "http://169.254.169.254/gateway/llm/openai"
+	defaultOllamaURL    = "http://localhost:11434"
 )
 
 func main() {
@@ -87,7 +86,7 @@ func main() {
 		client = llm.NewOpenAI(apiKey, model, baseURL)
 	case "ollama":
 		if baseURL == "" {
-			baseURL = "http://localhost:11434"
+			baseURL = defaultOllamaURL
 		}
 		client = llm.NewOllama(model, baseURL)
 	default:
@@ -142,59 +141,6 @@ func main() {
 	disp.stop()
 
 	printSummary(*llmFlag, numRuns, allResults)
-}
-
-// filterCases returns the subset of cases matching the given glob pattern and tier range.
-// An empty filter or tier means "match all".
-func filterCases(all []evalCase, pattern, tierSpec string) ([]evalCase, error) {
-	minTier, maxTier, err := parseTierSpec(tierSpec)
-	if err != nil {
-		return nil, err
-	}
-
-	var out []evalCase
-	for _, ec := range all {
-		if minTier > 0 && (ec.tier < minTier || ec.tier > maxTier) {
-			continue
-		}
-		if pattern != "" {
-			matched, err := filepath.Match(pattern, ec.name)
-			if err != nil {
-				return nil, fmt.Errorf("bad filter pattern: %w", err)
-			}
-			if !matched {
-				continue
-			}
-		}
-		out = append(out, ec)
-	}
-	return out, nil
-}
-
-// parseTierSpec parses "" (all), "N" (single tier), or "N-M" (range).
-func parseTierSpec(s string) (min, max int, err error) {
-	if s == "" {
-		return 0, 0, nil
-	}
-	if i := strings.Index(s, "-"); i >= 0 {
-		min, err = strconv.Atoi(s[:i])
-		if err != nil {
-			return 0, 0, fmt.Errorf("bad tier range %q: %w", s, err)
-		}
-		max, err = strconv.Atoi(s[i+1:])
-		if err != nil {
-			return 0, 0, fmt.Errorf("bad tier range %q: %w", s, err)
-		}
-		if min > max {
-			return 0, 0, fmt.Errorf("bad tier range %q: min > max", s)
-		}
-		return min, max, nil
-	}
-	n, err := strconv.Atoi(s)
-	if err != nil {
-		return 0, 0, fmt.Errorf("bad tier %q: %w", s, err)
-	}
-	return n, n, nil
 }
 
 // runSingleEval sets up an isolated MCP session and runs a single eval case.

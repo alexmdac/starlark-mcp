@@ -6,8 +6,6 @@ import (
 	"net/http"
 )
 
-const defaultOllamaURL = "http://localhost:11434"
-
 // OllamaClient implements Client for local Ollama models.
 // Ollama exposes an OpenAI-compatible API, so this wraps OpenAIClient
 // with Ollama-appropriate defaults.
@@ -16,11 +14,7 @@ type OllamaClient struct {
 }
 
 // NewOllama creates a client for a local Ollama instance.
-// If baseURL is empty, it defaults to http://localhost:11434.
 func NewOllama(model, baseURL string) *OllamaClient {
-	if baseURL == "" {
-		baseURL = defaultOllamaURL
-	}
 	return &OllamaClient{
 		OpenAIClient: &OpenAIClient{
 			APIKey:  "ollama", // Ollama doesn't require an API key but the field must be non-empty.

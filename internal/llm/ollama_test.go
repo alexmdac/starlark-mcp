@@ -8,23 +8,16 @@ import (
 	"testing"
 )
 
-func TestNewOllama_Defaults(t *testing.T) {
-	c := NewOllama("llama3", "")
-	if c.OpenAIClient.BaseURL != "http://localhost:11434" {
-		t.Errorf("BaseURL = %q, want default ollama URL", c.OpenAIClient.BaseURL)
+func TestNewOllama(t *testing.T) {
+	c := NewOllama("llama3", "http://myhost:9999")
+	if c.OpenAIClient.BaseURL != "http://myhost:9999" {
+		t.Errorf("BaseURL = %q, want http://myhost:9999", c.OpenAIClient.BaseURL)
 	}
 	if c.OpenAIClient.Model != "llama3" {
 		t.Errorf("Model = %q, want llama3", c.OpenAIClient.Model)
 	}
 	if c.OpenAIClient.APIKey != "ollama" {
 		t.Errorf("APIKey = %q, want ollama", c.OpenAIClient.APIKey)
-	}
-}
-
-func TestNewOllama_CustomBaseURL(t *testing.T) {
-	c := NewOllama("mistral", "http://myhost:9999")
-	if c.OpenAIClient.BaseURL != "http://myhost:9999" {
-		t.Errorf("BaseURL = %q, want custom URL", c.OpenAIClient.BaseURL)
 	}
 }
 
