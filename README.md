@@ -85,17 +85,21 @@ task eval
 Flags can be passed after `--`:
 
 ```sh
-task eval -- -runs 10 -llm claude-sonnet-4-6
+task eval -- -runs 10 -llm anthropic:claude-sonnet-4-6
 ```
 
 | Flag | Default | Description |
 |------|---------|-------------|
 | `-runs` | `5` | Number of independent runs per eval case |
-| `-llm` | `claude-sonnet-4-6` | Model to evaluate |
-| `-llm-url` | `http://169.254.169.254/gateway/llm/anthropic` | API endpoint ([exe.dev LLM gateway](https://exe.dev/docs/shelley/llm-gateway)) |
+| `-llm` | `anthropic:claude-sonnet-4-6` | `provider:model` to evaluate (supported providers: `anthropic`, `openai`) |
+| `-llm-url` | per-provider default | API endpoint (overrides the provider's default URL) |
 
-The `ANTHROPIC_API_KEY` environment variable provides the API key (optional when
-using the exe.dev gateway).
+Default URLs (using the [exe.dev LLM gateway](https://exe.dev/docs/shelley/llm-gateway)):
+- `anthropic`: `http://169.254.169.254/gateway/llm/anthropic`
+- `openai`: `http://169.254.169.254/gateway/llm/openai`
+
+The `ANTHROPIC_API_KEY` or `OPENAI_API_KEY` environment variable provides the
+API key for the respective provider (optional when using the exe.dev gateway).
 
 ## License
 
