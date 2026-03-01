@@ -24,12 +24,12 @@ type OpenAIClient struct {
 }
 
 // NewOpenAI creates an OpenAI-compatible client.
-func NewOpenAI(apiKey, model, baseURL string) *OpenAIClient {
+func NewOpenAI(apiKey, model, baseURL string, opts ClientOpts) *OpenAIClient {
 	return &OpenAIClient{
 		APIKey:  apiKey,
 		Model:   model,
 		BaseURL: baseURL,
-		Timeout: 120 * time.Second,
+		Timeout: opts.RequestTimeout,
 		HTTP:    &http.Client{},
 	}
 }

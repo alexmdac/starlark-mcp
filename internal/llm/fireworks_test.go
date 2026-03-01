@@ -9,7 +9,7 @@ import (
 )
 
 func TestNewFireworks(t *testing.T) {
-	c := NewFireworks("fw-key", "accounts/fireworks/models/deepseek-v3p2", "https://api.fireworks.ai")
+	c := NewFireworks("fw-key", "accounts/fireworks/models/deepseek-v3p2", "https://api.fireworks.ai", ClientOpts{})
 	if c.OpenAIClient.BaseURL != "https://api.fireworks.ai" {
 		t.Errorf("BaseURL = %q, want https://api.fireworks.ai", c.OpenAIClient.BaseURL)
 	}
@@ -33,7 +33,7 @@ func TestFireworksSendMessage_TextOnly(t *testing.T) {
 	}))
 	defer srv.Close()
 
-	c := NewFireworks("fw-key", "accounts/fireworks/models/deepseek-v3p2", srv.URL)
+	c := NewFireworks("fw-key", "accounts/fireworks/models/deepseek-v3p2", srv.URL, ClientOpts{})
 	resp, err := c.SendMessage(context.Background(), &MessageParams{
 		MaxTokens: 100,
 		Messages:  []Message{{Role: RoleUser, Text: "hi"}},
@@ -73,7 +73,7 @@ func TestFireworksSendMessage_ToolUse(t *testing.T) {
 	}))
 	defer srv.Close()
 
-	c := NewFireworks("fw-key", "accounts/fireworks/models/deepseek-v3p2", srv.URL)
+	c := NewFireworks("fw-key", "accounts/fireworks/models/deepseek-v3p2", srv.URL, ClientOpts{})
 	resp, err := c.SendMessage(context.Background(), &MessageParams{
 		MaxTokens: 100,
 		Messages:  []Message{{Role: RoleUser, Text: "run it"}},

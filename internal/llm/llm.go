@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"strings"
+	"time"
 )
 
 // Client sends a message to an LLM and returns the response.
@@ -69,6 +70,13 @@ type MessageResponse struct {
 type Usage struct {
 	InputTokens  int
 	OutputTokens int
+}
+
+// ClientOpts holds optional configuration for LLM clients.
+type ClientOpts struct {
+	// RequestTimeout is the timeout for each individual LLM HTTP request.
+	// Zero means no timeout.
+	RequestTimeout time.Duration
 }
 
 // ParseModel parses a "provider:model" string.

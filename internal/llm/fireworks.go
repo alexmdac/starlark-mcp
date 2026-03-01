@@ -2,7 +2,6 @@ package llm
 
 import (
 	"net/http"
-	"time"
 )
 
 // FireworksClient implements Client for the Fireworks AI inference API.
@@ -14,13 +13,13 @@ type FireworksClient struct {
 }
 
 // NewFireworks creates a client for the Fireworks AI API.
-func NewFireworks(apiKey, model, baseURL string) *FireworksClient {
+func NewFireworks(apiKey, model, baseURL string, opts ClientOpts) *FireworksClient {
 	return &FireworksClient{
 		OpenAIClient: &OpenAIClient{
 			APIKey:  apiKey,
 			Model:   model,
 			BaseURL: baseURL,
-			Timeout: 120 * time.Second,
+			Timeout: opts.RequestTimeout,
 			HTTP:    &http.Client{},
 		},
 	}
