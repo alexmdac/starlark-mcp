@@ -10,6 +10,8 @@ import (
 	"math"
 	"os"
 	"os/signal"
+	"path/filepath"
+	"strconv"
 	"strings"
 	"sync"
 	"time"
@@ -47,6 +49,8 @@ func main() {
 	runsFlag := flag.Int("runs", 5, "number of independent runs per eval case")
 	llmFlag := flag.String("llm", "anthropic:claude-sonnet-4-6", "provider:model (e.g. \"anthropic:claude-haiku-4-5\")")
 	llmURLFlag := flag.String("llm-url", "", "base URL for the LLM API (overrides provider default)")
+	filterFlag := flag.String("filter", "", "glob pattern to match case names (e.g. \"*matrix*\")")
+	tierFlag := flag.String("tier", "", "tier or range to run (e.g. \"2\" or \"1-3\")")
 	flag.Parse()
 	numRuns := *runsFlag
 	if numRuns < 1 {
@@ -91,6 +95,16 @@ func main() {
 		os.Exit(1)
 	}
 
+	selected, err := filterCases(cases, *filterFlag, *tierFlag)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "%v\n", err)
+		os.Exit(1)
+	}
+	if len(selected) == 0 {
+		fmt.Fprintf(os.Stderr, "no eval cases matched the given filter/tier\n")
+		os.Exit(1)
+	}
+
 	ctx, cancel := signal.NotifyContext(context.Background(), os.Interrupt)
 	defer cancel()
 
@@ -98,17 +112,17 @@ func main() {
 	const maxConcurrent = 8
 	sem := make(chan struct{}, maxConcurrent)
 
-	disp := newDisplay(cases, numRuns)
-	allResults := make([]caseResults, len(cases))
+	disp := newDisplay(selected, numRuns)
+	allResults := make([]caseResults, len(selected))
 	for i := range allResults {
 		allResults[i] = caseResults{
-			ec:   cases[i],
+			ec:   selected[i],
 			Runs: make([]evalResult, numRuns),
 		}
 	}
 
 	var wg sync.WaitGroup
-	for i, ec := range cases {
+	for i, ec := range selected {
 		for r := range numRuns {
 			wg.Add(1)
 			go func() {
@@ -128,6 +142,59 @@ func main() {
 	disp.stop()
 
 	printSummary(*llmFlag, numRuns, allResults)
+}
+
+// filterCases returns the subset of cases matching the given glob pattern and tier range.
+// An empty filter or tier means "match all".
+func filterCases(all []evalCase, pattern, tierSpec string) ([]evalCase, error) {
+	minTier, maxTier, err := parseTierSpec(tierSpec)
+	if err != nil {
+		return nil, err
+	}
+
+	var out []evalCase
+	for _, ec := range all {
+		if minTier > 0 && (ec.tier < minTier || ec.tier > maxTier) {
+			continue
+		}
+		if pattern != "" {
+			matched, err := filepath.Match(pattern, ec.name)
+			if err != nil {
+				return nil, fmt.Errorf("bad filter pattern: %w", err)
+			}
+			if !matched {
+				continue
+			}
+		}
+		out = append(out, ec)
+	}
+	return out, nil
+}
+
+// parseTierSpec parses "" (all), "N" (single tier), or "N-M" (range).
+func parseTierSpec(s string) (min, max int, err error) {
+	if s == "" {
+		return 0, 0, nil
+	}
+	if i := strings.Index(s, "-"); i >= 0 {
+		min, err = strconv.Atoi(s[:i])
+		if err != nil {
+			return 0, 0, fmt.Errorf("bad tier range %q: %w", s, err)
+		}
+		max, err = strconv.Atoi(s[i+1:])
+		if err != nil {
+			return 0, 0, fmt.Errorf("bad tier range %q: %w", s, err)
+		}
+		if min > max {
+			return 0, 0, fmt.Errorf("bad tier range %q: min > max", s)
+		}
+		return min, max, nil
+	}
+	n, err := strconv.Atoi(s)
+	if err != nil {
+		return 0, 0, fmt.Errorf("bad tier %q: %w", s, err)
+	}
+	return n, n, nil
 }
 
 // runSingleEval sets up an isolated MCP session and runs a single eval case.
