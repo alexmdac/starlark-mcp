@@ -226,6 +226,14 @@ func toolResultMessage(toolCallID, content string, isError bool) llm.Message {
 	}
 }
 
+// nudgeMessage creates a user message asking the LLM to use a tool.
+func nudgeMessage(text string) llm.Message {
+	return llm.Message{
+		Role: llm.RoleUser,
+		Text: text,
+	}
+}
+
 // toolResultWithNudge creates a user message with a tool result and a text nudge.
 func toolResultWithNudge(toolCallID, content, nudge string) llm.Message {
 	return llm.Message{
@@ -279,8 +287,14 @@ func runEval(ctx context.Context, client llm.Client, session *mcp.ClientSession,
 
 		messages = append(messages, responseToHistory(resp))
 
-		// Find the first tool call.
+		// If the LLM didn't use a tool, nudge it to do so.
 		if len(resp.ToolCalls) == 0 {
+			if iter == 0 {
+				messages = append(messages, nudgeMessage(
+					"Please use the provided tool to execute your solution rather than responding with text. Call the tool now.",
+				))
+				continue
+			}
 			break
 		}
 		toolCall := resp.ToolCalls[0]
