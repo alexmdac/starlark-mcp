@@ -76,15 +76,16 @@ func (p *OpenAIClient) SendMessage(ctx context.Context, params *MessageParams) (
 // --- OpenAI wire types ---
 
 type openAIRequest struct {
-	Model     string          `json:"model"`
-	Messages  []openAIMessage `json:"messages"`
-	Tools     []openAIToolDef `json:"tools,omitempty"`
-	MaxTokens int             `json:"max_tokens,omitempty"`
+	Model               string          `json:"model"`
+	Messages            []openAIMessage `json:"messages"`
+	Tools               []openAIToolDef `json:"tools,omitempty"`
+	MaxCompletionTokens int             `json:"max_completion_tokens,omitempty"`
+	ParallelToolCalls   *bool           `json:"parallel_tool_calls,omitempty"`
 }
 
 type openAIMessage struct {
 	Role       string           `json:"role"`
-	Content    string           `json:"content,omitempty"`
+	Content    string           `json:"content"`
 	ToolCalls  []openAIToolCall `json:"tool_calls,omitempty"`
 	ToolCallID string           `json:"tool_call_id,omitempty"`
 }
@@ -154,11 +155,13 @@ func (p *OpenAIClient) buildRequest(params *MessageParams) *openAIRequest {
 		}
 	}
 
+	parallelToolCalls := false
 	return &openAIRequest{
-		Model:     p.Model,
-		Messages:  messages,
-		Tools:     tools,
-		MaxTokens: params.MaxTokens,
+		Model:               p.Model,
+		Messages:            messages,
+		Tools:               tools,
+		MaxCompletionTokens: params.MaxTokens,
+		ParallelToolCalls:   &parallelToolCalls,
 	}
 }
 

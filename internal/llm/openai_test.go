@@ -50,6 +50,9 @@ func TestOpenAISendMessage_TextOnly(t *testing.T) {
 	if gotReq.Model != "gpt-test" {
 		t.Errorf("model = %q, want %q", gotReq.Model, "gpt-test")
 	}
+	if gotReq.MaxCompletionTokens != 100 {
+		t.Errorf("max_completion_tokens = %d, want 100", gotReq.MaxCompletionTokens)
+	}
 	if len(gotReq.Messages) != 2 {
 		t.Fatalf("messages len = %d, want 2 (system + user)", len(gotReq.Messages))
 	}
