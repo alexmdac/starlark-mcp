@@ -41,16 +41,29 @@ type caseResults struct {
 const (
 	defaultAnthropicURL = "http://169.254.169.254/gateway/llm/anthropic"
 	defaultOpenAIURL    = "http://169.254.169.254/gateway/llm/openai"
+	defaultOllamaURL    = "http://localhost:11434"
 )
 
 func main() {
 	runsFlag := flag.Int("runs", 5, "number of independent runs per eval case")
 	llmFlag := flag.String("llm", "anthropic:claude-sonnet-4-6", "provider:model (e.g. \"anthropic:claude-haiku-4-5\")")
 	llmURLFlag := flag.String("llm-url", "", "base URL for the LLM API (overrides provider default)")
+	filterFlag := flag.String("filter", "", "glob pattern to match case names (e.g. \"*matrix*\")")
+	tierFlag := flag.String("tier", "", "tier or range to run (e.g. \"2\" or \"1-3\")")
+	maxAttemptsFlag := flag.Int("max-attempts", 3, "max tool-call attempts per eval case")
+	maxItersFlag := flag.Int("max-iters", 6, "max LLM round-trips per eval case (includes nudges)")
 	flag.Parse()
 	numRuns := *runsFlag
 	if numRuns < 1 {
 		numRuns = 1
+	}
+	if *maxAttemptsFlag < 1 {
+		fmt.Fprintf(os.Stderr, "-max-attempts must be >= 1\n")
+		os.Exit(1)
+	}
+	if *maxItersFlag < 1 {
+		fmt.Fprintf(os.Stderr, "-max-iters must be >= 1\n")
+		os.Exit(1)
 	}
 
 	providerName, model, err := llm.ParseModel(*llmFlag)
@@ -81,8 +94,23 @@ func main() {
 			apiKey = "unspecified"
 		}
 		client = llm.NewOpenAI(apiKey, model, baseURL)
+	case "ollama":
+		if baseURL == "" {
+			baseURL = defaultOllamaURL
+		}
+		client = llm.NewOllama(model, baseURL)
 	default:
-		fmt.Fprintf(os.Stderr, "unknown provider: %q (supported: anthropic, openai)\n", providerName)
+		fmt.Fprintf(os.Stderr, "unknown provider: %q (supported: anthropic, openai, ollama)\n", providerName)
+		os.Exit(1)
+	}
+
+	selected, err := filterCases(cases, *filterFlag, *tierFlag)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "%v\n", err)
+		os.Exit(1)
+	}
+	if len(selected) == 0 {
+		fmt.Fprintf(os.Stderr, "no eval cases matched the given filter/tier\n")
 		os.Exit(1)
 	}
 
@@ -93,17 +121,17 @@ func main() {
 	const maxConcurrent = 8
 	sem := make(chan struct{}, maxConcurrent)
 
-	disp := newDisplay(cases, numRuns)
-	allResults := make([]caseResults, len(cases))
+	disp := newDisplay(selected, numRuns)
+	allResults := make([]caseResults, len(selected))
 	for i := range allResults {
 		allResults[i] = caseResults{
-			ec:   cases[i],
+			ec:   selected[i],
 			Runs: make([]evalResult, numRuns),
 		}
 	}
 
 	var wg sync.WaitGroup
-	for i, ec := range cases {
+	for i, ec := range selected {
 		for r := range numRuns {
 			wg.Add(1)
 			go func() {
@@ -112,7 +140,8 @@ func main() {
 				defer func() { <-sem }()
 
 				start := time.Now()
-				res := runSingleEval(ctx, client, ec)
+				cfg := evalConfig{maxAttempts: *maxAttemptsFlag, maxIters: *maxItersFlag}
+				res := runSingleEval(ctx, client, ec, cfg)
 				res.Duration = time.Since(start)
 				allResults[i].Runs[r] = res
 				disp.finishRun(i, res.Passed, res.Duration)
@@ -125,8 +154,14 @@ func main() {
 	printSummary(*llmFlag, numRuns, allResults)
 }
 
+// evalConfig holds per-run settings for the eval loop.
+type evalConfig struct {
+	maxAttempts int
+	maxIters    int
+}
+
 // runSingleEval sets up an isolated MCP session and runs a single eval case.
-func runSingleEval(ctx context.Context, client llm.Client, ec evalCase) evalResult {
+func runSingleEval(ctx context.Context, client llm.Client, ec evalCase, cfg evalConfig) evalResult {
 	t1, t2 := mcp.NewInMemoryTransports()
 	srv := server.New()
 	mcpClient := mcp.NewClient(&mcp.Implementation{Name: "eval-client"}, nil)
@@ -145,7 +180,7 @@ func runSingleEval(ctx context.Context, client llm.Client, ec evalCase) evalResu
 		log.Fatalf("eval %s: list tools: %v", ec.name, err)
 	}
 
-	return runEval(ctx, client, session, toolDefs, ec)
+	return runEval(ctx, client, session, toolDefs, ec, cfg)
 }
 
 // mcpToolDefs calls ListTools on the MCP session and converts the results
@@ -245,9 +280,9 @@ func toolResultWithNudge(toolCallID, content, nudge string) llm.Message {
 	}
 }
 
-func runEval(ctx context.Context, client llm.Client, session *mcp.ClientSession, toolDefs []llm.ToolDef, ec evalCase) evalResult {
-	const maxAttempts = 3
-	const maxIterations = 6
+func runEval(ctx context.Context, client llm.Client, session *mcp.ClientSession, toolDefs []llm.ToolDef, ec evalCase, cfg evalConfig) evalResult {
+	maxAttempts := cfg.maxAttempts
+	maxIterations := cfg.maxIters
 
 	const systemPrompt = "You have access to tools. Use them to solve the task. " +
 		"Do not explain your work — just call the appropriate tool."
@@ -287,13 +322,10 @@ func runEval(ctx context.Context, client llm.Client, session *mcp.ClientSession,
 
 		// If the LLM didn't use a tool, nudge it to do so.
 		if len(resp.ToolCalls) == 0 {
-			if iter == 0 {
-				messages = append(messages, nudgeMessage(
-					"Please use the provided tool to execute your solution rather than responding with text. Call the tool now.",
-				))
-				continue
-			}
-			break
+			messages = append(messages, nudgeMessage(
+				"Please use the provided tool to execute your solution rather than responding with text. Call the tool now.",
+			))
+			continue
 		}
 		toolCall := resp.ToolCalls[0]
 

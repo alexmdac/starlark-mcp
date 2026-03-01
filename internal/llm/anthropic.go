@@ -32,8 +32,11 @@ func NewAnthropic(apiKey, model, baseURL string) *AnthropicClient {
 
 // SendMessage implements Client.
 func (p *AnthropicClient) SendMessage(ctx context.Context, params *MessageParams) (*MessageResponse, error) {
-	ctx, cancel := context.WithTimeout(ctx, p.Timeout)
-	defer cancel()
+	if p.Timeout > 0 {
+		var cancel context.CancelFunc
+		ctx, cancel = context.WithTimeout(ctx, p.Timeout)
+		defer cancel()
+	}
 
 	req := p.buildRequest(params)
 
