@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"net/http"
-	"time"
 )
 
 const defaultOllamaURL = "http://localhost:11434"
@@ -27,7 +26,7 @@ func NewOllama(model, baseURL string) *OllamaClient {
 			APIKey:  "ollama", // Ollama doesn't require an API key but the field must be non-empty.
 			Model:   model,
 			BaseURL: baseURL,
-			Timeout: 300 * time.Second, // Local models can be slow, especially on first load.
+			Timeout: 0, // No timeout — local models can be arbitrarily slow.
 			HTTP:    &http.Client{},
 		},
 	}

@@ -33,8 +33,11 @@ func NewOpenAI(apiKey, model, baseURL string) *OpenAIClient {
 
 // SendMessage implements Client.
 func (p *OpenAIClient) SendMessage(ctx context.Context, params *MessageParams) (*MessageResponse, error) {
-	ctx, cancel := context.WithTimeout(ctx, p.Timeout)
-	defer cancel()
+	if p.Timeout > 0 {
+		var cancel context.CancelFunc
+		ctx, cancel = context.WithTimeout(ctx, p.Timeout)
+		defer cancel()
+	}
 
 	req := p.buildRequest(params)
 
