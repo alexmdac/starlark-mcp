@@ -57,6 +57,14 @@ func main() {
 	if numRuns < 1 {
 		numRuns = 1
 	}
+	if *maxAttemptsFlag < 1 {
+		fmt.Fprintf(os.Stderr, "-max-attempts must be >= 1\n")
+		os.Exit(1)
+	}
+	if *maxItersFlag < 1 {
+		fmt.Fprintf(os.Stderr, "-max-iters must be >= 1\n")
+		os.Exit(1)
+	}
 
 	providerName, model, err := llm.ParseModel(*llmFlag)
 	if err != nil {

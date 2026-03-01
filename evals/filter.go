@@ -3,8 +3,8 @@ package main
 import (
 	"fmt"
 	"path"
+	"regexp"
 	"strconv"
-	"strings"
 )
 
 // filterCases returns the subset of cases matching the given glob pattern and tier range.
@@ -34,28 +34,33 @@ func filterCases(all []evalCase, pattern, tierSpec string) ([]evalCase, error) {
 	return out, nil
 }
 
+var (
+	tierSingleRe = regexp.MustCompile(`^\d+$`)
+	tierRangeRe  = regexp.MustCompile(`^(\d+)-(\d+)$`)
+)
+
 // parseTierSpec parses "" (all), "N" (single tier), or "N-M" (range).
 func parseTierSpec(s string) (min, max int, err error) {
 	if s == "" {
 		return 0, 0, nil
 	}
-	if i := strings.Index(s, "-"); i >= 0 {
-		min, err = strconv.Atoi(s[:i])
-		if err != nil {
-			return 0, 0, fmt.Errorf("bad tier range %q: %w", s, err)
+	if tierSingleRe.MatchString(s) {
+		n, _ := strconv.Atoi(s)
+		if n < 1 {
+			return 0, 0, fmt.Errorf("bad tier %q: tiers must be >= 1", s)
 		}
-		max, err = strconv.Atoi(s[i+1:])
-		if err != nil {
-			return 0, 0, fmt.Errorf("bad tier range %q: %w", s, err)
+		return n, n, nil
+	}
+	if m := tierRangeRe.FindStringSubmatch(s); m != nil {
+		min, _ = strconv.Atoi(m[1])
+		max, _ = strconv.Atoi(m[2])
+		if min < 1 || max < 1 {
+			return 0, 0, fmt.Errorf("bad tier range %q: tiers must be >= 1", s)
 		}
 		if min > max {
 			return 0, 0, fmt.Errorf("bad tier range %q: min > max", s)
 		}
 		return min, max, nil
 	}
-	n, err := strconv.Atoi(s)
-	if err != nil {
-		return 0, 0, fmt.Errorf("bad tier %q: %w", s, err)
-	}
-	return n, n, nil
+	return 0, 0, fmt.Errorf("bad tier %q: expected N or N-M where N,M >= 1", s)
 }

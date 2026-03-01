@@ -1,6 +1,7 @@
 package main
 
 import (
+	"strings"
 	"testing"
 )
 
@@ -107,21 +108,38 @@ func TestParseTierSpec(t *testing.T) {
 		input   string
 		wantMin int
 		wantMax int
-		wantErr bool
+		wantErr string // empty means no error expected
 	}{
-		{"", 0, 0, false},
-		{"3", 3, 3, false},
-		{"1-4", 1, 4, false},
-		{"4-1", 0, 0, true},
-		{"abc", 0, 0, true},
-		{"1-abc", 0, 0, true},
-		{"abc-3", 0, 0, true},
+		{"", 0, 0, ""},
+		{"3", 3, 3, ""},
+		{"1-4", 1, 4, ""},
+		{"0", 0, 0, `bad tier "0": tiers must be >= 1`},
+		{"-1", 0, 0, `bad tier "-1": expected N or N-M where N,M >= 1`},
+		{"0-2", 0, 0, `bad tier range "0-2": tiers must be >= 1`},
+		{"1--3", 0, 0, `bad tier "1--3": expected N or N-M where N,M >= 1`},
+		{"-1-2", 0, 0, `bad tier "-1-2": expected N or N-M where N,M >= 1`},
+		{"-1--2", 0, 0, `bad tier "-1--2": expected N or N-M where N,M >= 1`},
+		{"4-1", 0, 0, `bad tier range "4-1": min > max`},
+		{"abc", 0, 0, `bad tier "abc": expected N or N-M where N,M >= 1`},
+		{"1-abc", 0, 0, `bad tier "1-abc": expected N or N-M where N,M >= 1`},
+		{"abc-3", 0, 0, `bad tier "abc-3": expected N or N-M where N,M >= 1`},
 	}
 	for _, tt := range tests {
 		min, max, err := parseTierSpec(tt.input)
-		if (err != nil) != tt.wantErr {
-			t.Errorf("parseTierSpec(%q) error = %v, wantErr = %v", tt.input, err, tt.wantErr)
-			continue
+		if tt.wantErr == "" {
+			if err != nil {
+				t.Errorf("parseTierSpec(%q) unexpected error: %v", tt.input, err)
+				continue
+			}
+		} else {
+			if err == nil {
+				t.Errorf("parseTierSpec(%q) expected error containing %q, got nil", tt.input, tt.wantErr)
+				continue
+			}
+			if got := err.Error(); !strings.Contains(got, tt.wantErr) {
+				t.Errorf("parseTierSpec(%q) error = %q, want containing %q", tt.input, got, tt.wantErr)
+				continue
+			}
 		}
 		if min != tt.wantMin || max != tt.wantMax {
 			t.Errorf("parseTierSpec(%q) = (%d, %d), want (%d, %d)", tt.input, min, max, tt.wantMin, tt.wantMax)
