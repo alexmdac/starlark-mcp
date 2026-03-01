@@ -14,13 +14,13 @@ type OllamaClient struct {
 }
 
 // NewOllama creates a client for a local Ollama instance.
-func NewOllama(model, baseURL string) *OllamaClient {
+func NewOllama(model, baseURL string, opts ClientOpts) *OllamaClient {
 	return &OllamaClient{
 		OpenAIClient: &OpenAIClient{
 			APIKey:  "ollama", // Ollama doesn't require an API key but the field must be non-empty.
 			Model:   model,
 			BaseURL: baseURL,
-			Timeout: 0, // No timeout — local models can be arbitrarily slow.
+			Timeout: opts.RequestTimeout,
 			HTTP:    &http.Client{},
 		},
 	}

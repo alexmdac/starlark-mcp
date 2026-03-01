@@ -24,24 +24,18 @@ type OpenAIClient struct {
 }
 
 // NewOpenAI creates an OpenAI-compatible client.
-func NewOpenAI(apiKey, model, baseURL string) *OpenAIClient {
+func NewOpenAI(apiKey, model, baseURL string, opts ClientOpts) *OpenAIClient {
 	return &OpenAIClient{
 		APIKey:  apiKey,
 		Model:   model,
 		BaseURL: baseURL,
-		Timeout: 120 * time.Second,
+		Timeout: opts.RequestTimeout,
 		HTTP:    &http.Client{},
 	}
 }
 
 // SendMessage implements Client.
 func (p *OpenAIClient) SendMessage(ctx context.Context, params *MessageParams) (*MessageResponse, error) {
-	if p.Timeout > 0 {
-		var cancel context.CancelFunc
-		ctx, cancel = context.WithTimeout(ctx, p.Timeout)
-		defer cancel()
-	}
-
 	req := p.buildRequest(params)
 
 	body, err := json.Marshal(req)
@@ -85,19 +79,35 @@ func (p *OpenAIClient) doWithRetry(ctx context.Context, req *http.Request, body 
 	}
 
 	for attempt := range maxRetries {
+		// Apply per-request timeout so each attempt gets the full duration,
+		// rather than sharing a single deadline across all retries.
+		reqCtx := ctx
+		var reqCancel context.CancelFunc
+		if p.Timeout > 0 {
+			reqCtx, reqCancel = context.WithTimeout(ctx, p.Timeout)
+		}
+
 		var httpReq *http.Request
 		if attempt == 0 {
-			httpReq = req
+			// Re-create with the per-request context.
+			httpReq = req.Clone(reqCtx)
+			httpReq.Body = io.NopCloser(bytes.NewReader(body))
 		} else {
 			var err error
-			httpReq, err = http.NewRequestWithContext(ctx, req.Method, req.URL.String(), bytes.NewReader(body))
+			httpReq, err = http.NewRequestWithContext(reqCtx, req.Method, req.URL.String(), bytes.NewReader(body))
 			if err != nil {
+				if reqCancel != nil {
+					reqCancel()
+				}
 				return nil, nil, fmt.Errorf("create retry request: %w", err)
 			}
 			httpReq.Header = req.Header
 		}
 
 		resp, respBody, err := p.doRequest(httpReq)
+		if reqCancel != nil {
+			reqCancel()
+		}
 		if err != nil {
 			return nil, nil, err
 		}

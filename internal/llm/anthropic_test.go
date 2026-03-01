@@ -37,7 +37,7 @@ func TestAnthropicSendMessage_TextOnly(t *testing.T) {
 	}))
 	defer srv.Close()
 
-	p := NewAnthropic("test-key", "claude-test", srv.URL)
+	p := NewAnthropic("test-key", "claude-test", srv.URL, ClientOpts{})
 	resp, err := p.SendMessage(context.Background(), &MessageParams{
 		System:    "Be helpful.",
 		MaxTokens: 100,
@@ -96,7 +96,7 @@ func TestAnthropicSendMessage_ToolUse(t *testing.T) {
 	}))
 	defer srv.Close()
 
-	p := NewAnthropic("k", "m", srv.URL)
+	p := NewAnthropic("k", "m", srv.URL, ClientOpts{})
 	resp, err := p.SendMessage(context.Background(), &MessageParams{
 		MaxTokens: 100,
 		Messages:  []Message{{Role: RoleUser, Text: "run it"}},
@@ -134,7 +134,7 @@ func TestAnthropicSendMessage_ToolResult(t *testing.T) {
 	}))
 	defer srv.Close()
 
-	p := NewAnthropic("k", "m", srv.URL)
+	p := NewAnthropic("k", "m", srv.URL, ClientOpts{})
 	_, err := p.SendMessage(context.Background(), &MessageParams{
 		MaxTokens: 100,
 		Messages: []Message{
@@ -186,7 +186,7 @@ func TestAnthropicSendMessage_ToolDefs(t *testing.T) {
 	}))
 	defer srv.Close()
 
-	p := NewAnthropic("k", "m", srv.URL)
+	p := NewAnthropic("k", "m", srv.URL, ClientOpts{})
 	_, err := p.SendMessage(context.Background(), &MessageParams{
 		MaxTokens: 100,
 		Messages:  []Message{{Role: RoleUser, Text: "hi"}},
@@ -237,7 +237,7 @@ func TestAnthropicSendMessage_APIError(t *testing.T) {
 	}))
 	defer srv.Close()
 
-	p := NewAnthropic("k", "m", srv.URL)
+	p := NewAnthropic("k", "m", srv.URL, ClientOpts{})
 	_, err := p.SendMessage(context.Background(), &MessageParams{
 		MaxTokens: 100,
 		Messages:  []Message{{Role: RoleUser, Text: "hi"}},

@@ -35,7 +35,7 @@ func TestOpenAISendMessage_TextOnly(t *testing.T) {
 	}))
 	defer srv.Close()
 
-	p := NewOpenAI("test-key", "gpt-test", srv.URL)
+	p := NewOpenAI("test-key", "gpt-test", srv.URL, ClientOpts{})
 	resp, err := p.SendMessage(context.Background(), &MessageParams{
 		System:    "Be helpful.",
 		MaxTokens: 100,
@@ -106,7 +106,7 @@ func TestOpenAISendMessage_ToolUse(t *testing.T) {
 	}))
 	defer srv.Close()
 
-	p := NewOpenAI("k", "m", srv.URL)
+	p := NewOpenAI("k", "m", srv.URL, ClientOpts{})
 	resp, err := p.SendMessage(context.Background(), &MessageParams{
 		MaxTokens: 100,
 		Messages:  []Message{{Role: RoleUser, Text: "run it"}},
@@ -148,7 +148,7 @@ func TestOpenAISendMessage_ToolDefs(t *testing.T) {
 	}))
 	defer srv.Close()
 
-	p := NewOpenAI("k", "m", srv.URL)
+	p := NewOpenAI("k", "m", srv.URL, ClientOpts{})
 	_, err := p.SendMessage(context.Background(), &MessageParams{
 		MaxTokens: 100,
 		Messages:  []Message{{Role: RoleUser, Text: "hi"}},
@@ -209,7 +209,7 @@ func TestOpenAISendMessage_AssistantTextWithToolCalls(t *testing.T) {
 	}))
 	defer srv.Close()
 
-	p := NewOpenAI("k", "m", srv.URL)
+	p := NewOpenAI("k", "m", srv.URL, ClientOpts{})
 	_, err := p.SendMessage(context.Background(), &MessageParams{
 		MaxTokens: 100,
 		Messages: []Message{
@@ -256,7 +256,7 @@ func TestOpenAISendMessage_ToolResult(t *testing.T) {
 	}))
 	defer srv.Close()
 
-	p := NewOpenAI("k", "m", srv.URL)
+	p := NewOpenAI("k", "m", srv.URL, ClientOpts{})
 	_, err := p.SendMessage(context.Background(), &MessageParams{
 		MaxTokens: 100,
 		Messages: []Message{
@@ -325,7 +325,7 @@ func TestOpenAISendMessage_APIError(t *testing.T) {
 	}))
 	defer srv.Close()
 
-	p := NewOpenAI("k", "m", srv.URL)
+	p := NewOpenAI("k", "m", srv.URL, ClientOpts{})
 	_, err := p.SendMessage(context.Background(), &MessageParams{
 		MaxTokens: 100,
 		Messages:  []Message{{Role: RoleUser, Text: "hi"}},
@@ -345,7 +345,7 @@ func TestOpenAISendMessage_NoChoices(t *testing.T) {
 	}))
 	defer srv.Close()
 
-	p := NewOpenAI("k", "m", srv.URL)
+	p := NewOpenAI("k", "m", srv.URL, ClientOpts{})
 	_, err := p.SendMessage(context.Background(), &MessageParams{
 		MaxTokens: 100,
 		Messages:  []Message{{Role: RoleUser, Text: "hi"}},
@@ -375,7 +375,7 @@ func TestOpenAISendMessage_RetryAfter(t *testing.T) {
 	}))
 	defer srv.Close()
 
-	p := NewOpenAI("k", "m", srv.URL)
+	p := NewOpenAI("k", "m", srv.URL, ClientOpts{})
 	resp, err := p.SendMessage(context.Background(), &MessageParams{
 		MaxTokens: 100,
 		Messages:  []Message{{Role: RoleUser, Text: "hi"}},
@@ -409,7 +409,7 @@ func TestOpenAISendMessage_429BackoffWithoutHeader(t *testing.T) {
 	}))
 	defer srv.Close()
 
-	p := NewOpenAI("k", "m", srv.URL)
+	p := NewOpenAI("k", "m", srv.URL, ClientOpts{})
 	p.InitialBackoff = 1 * time.Millisecond
 	resp, err := p.SendMessage(context.Background(), &MessageParams{
 		MaxTokens: 100,
@@ -436,7 +436,7 @@ func TestOpenAISendMessage_429ExhaustedRetries(t *testing.T) {
 	}))
 	defer srv.Close()
 
-	p := NewOpenAI("k", "m", srv.URL)
+	p := NewOpenAI("k", "m", srv.URL, ClientOpts{})
 	_, err := p.SendMessage(context.Background(), &MessageParams{
 		MaxTokens: 100,
 		Messages:  []Message{{Role: RoleUser, Text: "hi"}},

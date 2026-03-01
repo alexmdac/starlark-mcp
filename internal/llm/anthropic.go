@@ -20,12 +20,12 @@ type AnthropicClient struct {
 }
 
 // NewAnthropic creates an Anthropic client.
-func NewAnthropic(apiKey, model, baseURL string) *AnthropicClient {
+func NewAnthropic(apiKey, model, baseURL string, opts ClientOpts) *AnthropicClient {
 	return &AnthropicClient{
 		APIKey:  apiKey,
 		Model:   model,
 		BaseURL: baseURL,
-		Timeout: 120 * time.Second,
+		Timeout: opts.RequestTimeout,
 		HTTP:    &http.Client{},
 	}
 }

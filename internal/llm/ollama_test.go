@@ -9,7 +9,7 @@ import (
 )
 
 func TestNewOllama(t *testing.T) {
-	c := NewOllama("llama3", "http://myhost:9999")
+	c := NewOllama("llama3", "http://myhost:9999", ClientOpts{})
 	if c.OpenAIClient.BaseURL != "http://myhost:9999" {
 		t.Errorf("BaseURL = %q, want http://myhost:9999", c.OpenAIClient.BaseURL)
 	}
@@ -53,7 +53,7 @@ func TestOllamaSendMessage_SynthesizesToolCallIDs(t *testing.T) {
 	}))
 	defer srv.Close()
 
-	c := NewOllama("llama3", srv.URL)
+	c := NewOllama("llama3", srv.URL, ClientOpts{})
 	resp, err := c.SendMessage(context.Background(), &MessageParams{
 		MaxTokens: 100,
 		Messages:  []Message{{Role: RoleUser, Text: "run it"}},
@@ -96,7 +96,7 @@ func TestOllamaSendMessage_PreservesExistingIDs(t *testing.T) {
 	}))
 	defer srv.Close()
 
-	c := NewOllama("llama3", srv.URL)
+	c := NewOllama("llama3", srv.URL, ClientOpts{})
 	resp, err := c.SendMessage(context.Background(), &MessageParams{
 		MaxTokens: 100,
 		Messages:  []Message{{Role: RoleUser, Text: "run it"}},
@@ -122,7 +122,7 @@ func TestOllamaSendMessage_TextOnly(t *testing.T) {
 	}))
 	defer srv.Close()
 
-	c := NewOllama("llama3", srv.URL)
+	c := NewOllama("llama3", srv.URL, ClientOpts{})
 	resp, err := c.SendMessage(context.Background(), &MessageParams{
 		MaxTokens: 100,
 		Messages:  []Message{{Role: RoleUser, Text: "hi"}},
