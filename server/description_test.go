@@ -38,6 +38,7 @@ func TestDescription_Works(t *testing.T) {
 		{"string replace", `print("hello".replace("l", "r"))`, "herro"},
 		{"string split", `print("a,b".split(","))`, `["a", "b"]`},
 		{"string join", `print(",".join(["a","b"]))`, "a,b"},
+		{"string elems", `print(",".join("abc".elems()))`, "a,b,c"},
 		{"string format", `print("hi {}".format("there"))`, "hi there"},
 		{"list comp with func call", "def double(x): return x * 2\nprint([double(x) for x in [1,2,3]])", "[2, 4, 6]"},
 		{"math sqrt", `load("math", "sqrt"); print(sqrt(16))`, "4.0"},
@@ -98,6 +99,7 @@ func TestDescription_Errors(t *testing.T) {
 		{"no ljust", `print("hi".ljust(10))`, "no .ljust field or method"},
 		{"no center", `print("hi".center(10))`, "no .center field or method"},
 		{"no import", `import os`, "got import"},
+		{"string not iterable", `for c in "abc": print(c)`, "not iterable"},
 	}
 
 	for _, tc := range tests {
