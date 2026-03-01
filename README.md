@@ -86,20 +86,37 @@ Flags can be passed after `--`:
 
 ```sh
 task eval -- -runs 10 -llm anthropic:claude-sonnet-4-6
+task eval -- -llm ollama:qwen3:4b -runs 1 -tier 1-2 -filter count_*
 ```
 
 | Flag | Default | Description |
 |------|---------|-------------|
 | `-runs` | `5` | Number of independent runs per eval case |
-| `-llm` | `anthropic:claude-sonnet-4-6` | `provider:model` to evaluate (supported providers: `anthropic`, `openai`) |
+| `-llm` | `anthropic:claude-sonnet-4-6` | `provider:model` to evaluate (see providers below) |
 | `-llm-url` | per-provider default | API endpoint (overrides the provider's default URL) |
+| `-filter` | | Glob pattern to select eval cases by name |
+| `-tier` | | Tier filter: `N` for a single tier, `N-M` for a range |
+| `-max-attempts` | `3` | Max tool-call attempts per eval case |
+| `-max-iters` | `6` | Max LLM round-trips per eval case (includes nudges) |
 
-Default URLs (using the [exe.dev LLM gateway](https://exe.dev/docs/shelley/llm-gateway)):
-- `anthropic`: `http://169.254.169.254/gateway/llm/anthropic`
-- `openai`: `http://169.254.169.254/gateway/llm/openai`
+**Providers:**
 
-The `ANTHROPIC_API_KEY` or `OPENAI_API_KEY` environment variable provides the
-API key for the respective provider (optional when using the exe.dev gateway).
+| Provider | Example | Default URL |
+|----------|---------|-------------|
+| `anthropic` | `anthropic:claude-sonnet-4-6` | exe.dev LLM gateway |
+| `openai` | `openai:gpt-4o` | exe.dev LLM gateway |
+| `ollama` | `ollama:qwen3:4b` | `http://localhost:11434` |
+
+The `openai` provider works with any OpenAI-compatible API. For example, to use
+[Fireworks AI](https://fireworks.ai/):
+
+```sh
+task eval -- -llm openai:accounts/fireworks/models/qwen3-4b -llm-url https://api.fireworks.ai/inference
+```
+
+The `ANTHROPIC_API_KEY`, `OPENAI_API_KEY`, or `FIREWORKS_API_KEY` environment
+variable provides the API key for the respective provider (optional when using
+the exe.dev gateway). The `ollama` provider does not require an API key.
 
 ## License
 
