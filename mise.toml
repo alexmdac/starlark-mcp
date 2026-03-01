@@ -1,3 +1,5 @@
+dotenv = ".env"
+
 [tools]
 lefthook = "1"
 staticcheck = "2026"
