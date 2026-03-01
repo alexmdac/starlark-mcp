@@ -107,16 +107,9 @@ task eval -- -llm ollama:qwen3:4b -runs 1 -tier 1-2 -filter count_*
 | `openai` | `openai:gpt-4o` | exe.dev LLM gateway |
 | `ollama` | `ollama:qwen3:4b` | `http://localhost:11434` |
 
-The `openai` provider works with any OpenAI-compatible API. For example, to use
-[Fireworks AI](https://fireworks.ai/):
-
-```sh
-task eval -- -llm openai:accounts/fireworks/models/qwen3-4b -llm-url https://api.fireworks.ai/inference
-```
-
-The `ANTHROPIC_API_KEY`, `OPENAI_API_KEY`, or `FIREWORKS_API_KEY` environment
-variable provides the API key for the respective provider (optional when using
-the exe.dev gateway). The `ollama` provider does not require an API key.
+The `ANTHROPIC_API_KEY` or `OPENAI_API_KEY` environment variable provides the
+API key for the respective provider (optional when using the exe.dev gateway).
+The `ollama` provider does not require an API key.
 
 ## License
 
