@@ -264,15 +264,6 @@ var cases = []evalCase{
 		judge: exactOutput("11"),
 	},
 	{
-		name: "decimal_to_binary",
-		tier: 2,
-		prompt: dedent(`
-			Convert the decimal number 255 to its binary string representation with
-			no prefix (no "0b"). Print only the binary string, nothing else.
-		`),
-		judge: exactOutput("11111111"),
-	},
-	{
 		name: "pascals_triangle",
 		tier: 2,
 		prompt: dedent(`

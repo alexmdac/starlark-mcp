@@ -74,7 +74,7 @@ task --list
 ### Evals
 
 The project includes an LLM eval harness that measures how effectively models
-use the `execute_starlark` tool. It runs 36 test cases across 6 difficulty tiers,
+use the `execute_starlark` tool. It runs 44 test cases across 6 difficulty tiers,
 executing each case multiple times to measure reliability, and produces a scored
 summary with pass rates.
 
