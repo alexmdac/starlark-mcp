@@ -76,7 +76,7 @@ type Usage struct {
 func ParseModel(s string) (provider, model string, err error) {
 	i := strings.Index(s, ":")
 	if i < 0 {
-		return "", "", fmt.Errorf("model %q must have a provider prefix (e.g. \"anthropic:claude-haiku-4-5\" or \"openai:gpt-4o\")", s)
+		return "", "", fmt.Errorf("model %q must have a provider prefix (e.g. \"anthropic:claude-haiku-4-5\", \"openai:gpt-4o\", or \"ollama:llama3\")", s)
 	}
 	return s[:i], s[i+1:], nil
 }

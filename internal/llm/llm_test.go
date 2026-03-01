@@ -12,6 +12,8 @@ func TestParseModel(t *testing.T) {
 		{"anthropic:claude-haiku-4-5", "anthropic", "claude-haiku-4-5", false},
 		{"openai:gpt-4o", "openai", "gpt-4o", false},
 		{"openai:meta-llama/Llama-3-8B", "openai", "meta-llama/Llama-3-8B", false},
+		{"ollama:llama3", "ollama", "llama3", false},
+		{"ollama:qwen2.5-coder:7b", "ollama", "qwen2.5-coder:7b", false},
 		{"claude-haiku-4-5", "", "", true},
 		{"", "", "", true},
 	}

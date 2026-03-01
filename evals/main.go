@@ -81,8 +81,13 @@ func main() {
 			apiKey = "unspecified"
 		}
 		client = llm.NewOpenAI(apiKey, model, baseURL)
+	case "ollama":
+		if baseURL == "" {
+			baseURL = "http://localhost:11434"
+		}
+		client = llm.NewOllama(model, baseURL)
 	default:
-		fmt.Fprintf(os.Stderr, "unknown provider: %q (supported: anthropic, openai)\n", providerName)
+		fmt.Fprintf(os.Stderr, "unknown provider: %q (supported: anthropic, openai, ollama)\n", providerName)
 		os.Exit(1)
 	}
 
