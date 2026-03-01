@@ -60,4 +60,4 @@ tasks:
   eval:
     desc: Run LLM evals
     cmds:
-      - go run -tags eval ./evals {{.CLI_ARGS}}
+      - go run ./evals {{.CLI_ARGS}}
