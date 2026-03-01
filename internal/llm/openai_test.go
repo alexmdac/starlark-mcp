@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"testing"
+	"time"
 )
 
 func TestOpenAISendMessage_TextOnly(t *testing.T) {
@@ -351,5 +352,121 @@ func TestOpenAISendMessage_NoChoices(t *testing.T) {
 	})
 	if err == nil {
 		t.Fatal("expected error for empty choices")
+	}
+}
+
+func TestOpenAISendMessage_RetryAfter(t *testing.T) {
+	attempts := 0
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		attempts++
+		if attempts == 1 {
+			w.Header().Set("Retry-After", "0")
+			w.WriteHeader(http.StatusTooManyRequests)
+			w.Write([]byte(`{"error":{"message":"rate limited"}}`))
+			return
+		}
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(openAIResponse{
+			Choices: []openAIChoice{
+				{Message: openAIMessage{Role: "assistant", Content: "ok"}},
+			},
+			Usage: openAIUsage{PromptTokens: 5, CompletionTokens: 3},
+		})
+	}))
+	defer srv.Close()
+
+	p := NewOpenAI("k", "m", srv.URL)
+	resp, err := p.SendMessage(context.Background(), &MessageParams{
+		MaxTokens: 100,
+		Messages:  []Message{{Role: RoleUser, Text: "hi"}},
+	})
+	if err != nil {
+		t.Fatalf("SendMessage: %v", err)
+	}
+	if attempts != 2 {
+		t.Errorf("attempts = %d, want 2", attempts)
+	}
+	if resp.Text != "ok" {
+		t.Errorf("text = %q, want ok", resp.Text)
+	}
+}
+
+func TestOpenAISendMessage_429BackoffWithoutHeader(t *testing.T) {
+	attempts := 0
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		attempts++
+		if attempts <= 2 {
+			w.WriteHeader(http.StatusTooManyRequests)
+			w.Write([]byte(`{"error":{"message":"rate limited"}}`))
+			return
+		}
+		w.Header().Set("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(openAIResponse{
+			Choices: []openAIChoice{
+				{Message: openAIMessage{Role: "assistant", Content: "ok"}},
+			},
+		})
+	}))
+	defer srv.Close()
+
+	p := NewOpenAI("k", "m", srv.URL)
+	p.InitialBackoff = 1 * time.Millisecond
+	resp, err := p.SendMessage(context.Background(), &MessageParams{
+		MaxTokens: 100,
+		Messages:  []Message{{Role: RoleUser, Text: "hi"}},
+	})
+	if err != nil {
+		t.Fatalf("SendMessage: %v", err)
+	}
+	if attempts != 3 {
+		t.Errorf("attempts = %d, want 3", attempts)
+	}
+	if resp.Text != "ok" {
+		t.Errorf("text = %q, want ok", resp.Text)
+	}
+}
+
+func TestOpenAISendMessage_429ExhaustedRetries(t *testing.T) {
+	attempts := 0
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		attempts++
+		w.Header().Set("Retry-After", "0")
+		w.WriteHeader(http.StatusTooManyRequests)
+		w.Write([]byte(`{"error":{"message":"rate limited"}}`))
+	}))
+	defer srv.Close()
+
+	p := NewOpenAI("k", "m", srv.URL)
+	_, err := p.SendMessage(context.Background(), &MessageParams{
+		MaxTokens: 100,
+		Messages:  []Message{{Role: RoleUser, Text: "hi"}},
+	})
+	if err == nil {
+		t.Fatal("expected error")
+	}
+	if got := err.Error(); !contains(got, "429") {
+		t.Errorf("error = %q, want to contain 429", got)
+	}
+	if attempts != maxRetries {
+		t.Errorf("attempts = %d, want %d (maxRetries)", attempts, maxRetries)
+	}
+}
+
+func TestParseRetryAfter(t *testing.T) {
+	tests := []struct {
+		input string
+		want  time.Duration
+	}{
+		{"", -1},
+		{"0", 0},
+		{"1", 1 * time.Second},
+		{"30", 30 * time.Second},
+		{"-1", -1},
+		{"not-a-number", -1},
+	}
+	for _, tt := range tests {
+		if got := parseRetryAfter(tt.input); got != tt.want {
+			t.Errorf("parseRetryAfter(%q) = %v, want %v", tt.input, got, tt.want)
+		}
 	}
 }
