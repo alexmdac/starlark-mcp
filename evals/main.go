@@ -53,6 +53,7 @@ func main() {
 		maxItersFlag    = flag.Int("max-iters", 6, "max LLM round-trips per eval case (includes nudges)")
 		concurrencyFlag = flag.Int("concurrency", 8, "max concurrent eval runs")
 		runsFlag        = flag.Int("runs", 5, "number of independent runs per eval case")
+		timeoutFlag     = flag.Duration("timeout", 120*time.Second, "per-request LLM timeout")
 	)
 	flag.Parse()
 	numRuns := *runsFlag
@@ -86,7 +87,9 @@ func main() {
 		if apiKey == "" {
 			apiKey = "unspecified"
 		}
-		client = llm.NewAnthropic(apiKey, model, baseURL)
+		c := llm.NewAnthropic(apiKey, model, baseURL)
+		c.Timeout = *timeoutFlag
+		client = c
 	case "openai":
 		if baseURL == "" {
 			baseURL = defaultOpenAIURL
@@ -95,7 +98,9 @@ func main() {
 		if apiKey == "" {
 			apiKey = "unspecified"
 		}
-		client = llm.NewOpenAI(apiKey, model, baseURL)
+		c := llm.NewOpenAI(apiKey, model, baseURL)
+		c.Timeout = *timeoutFlag
+		client = c
 	case "fireworks":
 		if baseURL == "" {
 			baseURL = defaultFireworksURL
@@ -104,12 +109,16 @@ func main() {
 		if apiKey == "" {
 			apiKey = "unspecified"
 		}
-		client = llm.NewFireworks(apiKey, model, baseURL)
+		c := llm.NewFireworks(apiKey, model, baseURL)
+		c.Timeout = *timeoutFlag
+		client = c
 	case "ollama":
 		if baseURL == "" {
 			baseURL = defaultOllamaURL
 		}
-		client = llm.NewOllama(model, baseURL)
+		c := llm.NewOllama(model, baseURL)
+		c.Timeout = *timeoutFlag
+		client = c
 	default:
 		fmt.Fprintf(os.Stderr, "unknown provider: %q (supported: anthropic, openai, fireworks, ollama)\n", providerName)
 		os.Exit(1)
