@@ -41,17 +41,21 @@ type caseResults struct {
 const (
 	defaultAnthropicURL = "http://169.254.169.254/gateway/llm/anthropic"
 	defaultOpenAIURL    = "http://169.254.169.254/gateway/llm/openai"
+	defaultFireworksURL = "https://api.fireworks.ai/inference"
 	defaultOllamaURL    = "http://localhost:11434"
 )
 
 func main() {
-	runsFlag := flag.Int("runs", 5, "number of independent runs per eval case")
-	llmFlag := flag.String("llm", "anthropic:claude-sonnet-4-6", "provider:model (e.g. \"anthropic:claude-haiku-4-5\")")
-	llmURLFlag := flag.String("llm-url", "", "base URL for the LLM API (overrides provider default)")
-	filterFlag := flag.String("filter", "", "glob pattern to match case names (e.g. \"*matrix*\")")
-	tierFlag := flag.String("tier", "", "tier or range to run (e.g. \"2\" or \"1-3\")")
-	maxAttemptsFlag := flag.Int("max-attempts", 3, "max tool-call attempts per eval case")
-	maxItersFlag := flag.Int("max-iters", 6, "max LLM round-trips per eval case (includes nudges)")
+	var (
+		llmFlag         = flag.String("llm", "anthropic:claude-sonnet-4-6", "provider:model (e.g. \"anthropic:claude-haiku-4-5\")")
+		llmURLFlag      = flag.String("llm-url", "", "base URL for the LLM API (overrides provider default)")
+		filterFlag      = flag.String("filter", "", "glob pattern to match case names (e.g. \"*matrix*\")")
+		tierFlag        = flag.String("tier", "", "tier or range to run (e.g. \"2\" or \"1-3\")")
+		maxAttemptsFlag = flag.Int("max-attempts", 3, "max tool-call attempts per eval case")
+		maxItersFlag    = flag.Int("max-iters", 6, "max LLM round-trips per eval case (includes nudges)")
+		concurrencyFlag = flag.Int("concurrency", 8, "max concurrent eval runs")
+		runsFlag        = flag.Int("runs", 5, "number of independent runs per eval case")
+	)
 	flag.Parse()
 	numRuns := *runsFlag
 	if numRuns < 1 {
@@ -94,13 +98,22 @@ func main() {
 			apiKey = "unspecified"
 		}
 		client = llm.NewOpenAI(apiKey, model, baseURL)
+	case "fireworks":
+		if baseURL == "" {
+			baseURL = defaultFireworksURL
+		}
+		apiKey := os.Getenv("FIREWORKS_API_KEY")
+		if apiKey == "" {
+			apiKey = "unspecified"
+		}
+		client = llm.NewFireworks(apiKey, model, baseURL)
 	case "ollama":
 		if baseURL == "" {
 			baseURL = defaultOllamaURL
 		}
 		client = llm.NewOllama(model, baseURL)
 	default:
-		fmt.Fprintf(os.Stderr, "unknown provider: %q (supported: anthropic, openai, ollama)\n", providerName)
+		fmt.Fprintf(os.Stderr, "unknown provider: %q (supported: anthropic, openai, fireworks, ollama)\n", providerName)
 		os.Exit(1)
 	}
 
@@ -118,8 +131,7 @@ func main() {
 	defer cancel()
 
 	// Limit concurrency to avoid API rate limits.
-	const maxConcurrent = 8
-	sem := make(chan struct{}, maxConcurrent)
+	sem := make(chan struct{}, *concurrencyFlag)
 
 	disp := newDisplay(selected, numRuns)
 	allResults := make([]caseResults, len(selected))

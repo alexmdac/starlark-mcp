@@ -6,18 +6,21 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"math/rand/v2"
 	"net/http"
+	"strconv"
 	"time"
 )
 
 // OpenAIClient implements Client for the OpenAI Chat Completions API
 // and any compatible endpoint.
 type OpenAIClient struct {
-	APIKey  string
-	Model   string
-	BaseURL string
-	Timeout time.Duration
-	HTTP    *http.Client
+	APIKey         string
+	Model          string
+	BaseURL        string
+	Timeout        time.Duration
+	HTTP           *http.Client
+	InitialBackoff time.Duration // initial retry delay on 429; 0 uses default (2s)
 }
 
 // NewOpenAI creates an OpenAI-compatible client.
@@ -53,15 +56,9 @@ func (p *OpenAIClient) SendMessage(ctx context.Context, params *MessageParams) (
 	httpReq.Header.Set("Authorization", "Bearer "+p.APIKey)
 	httpReq.Header.Set("Content-Type", "application/json")
 
-	httpResp, err := p.HTTP.Do(httpReq)
+	httpResp, respBody, err := p.doWithRetry(ctx, httpReq, body)
 	if err != nil {
-		return nil, fmt.Errorf("send request: %w", err)
-	}
-	defer httpResp.Body.Close()
-
-	respBody, err := io.ReadAll(httpResp.Body)
-	if err != nil {
-		return nil, fmt.Errorf("read response: %w", err)
+		return nil, err
 	}
 
 	if httpResp.StatusCode != http.StatusOK {
@@ -74,6 +71,101 @@ func (p *OpenAIClient) SendMessage(ctx context.Context, params *MessageParams) (
 	}
 
 	return p.parseResponse(&apiResp)
+}
+
+const maxRetries = 8
+
+// doWithRetry sends an HTTP request and retries on 429 with exponential backoff
+// plus jitter. It respects the Retry-After header when present, otherwise uses
+// exponential backoff starting from InitialBackoff (default 2s).
+func (p *OpenAIClient) doWithRetry(ctx context.Context, req *http.Request, body []byte) (*http.Response, []byte, error) {
+	backoff := p.InitialBackoff
+	if backoff <= 0 {
+		backoff = 2 * time.Second
+	}
+
+	for attempt := range maxRetries {
+		var httpReq *http.Request
+		if attempt == 0 {
+			httpReq = req
+		} else {
+			var err error
+			httpReq, err = http.NewRequestWithContext(ctx, req.Method, req.URL.String(), bytes.NewReader(body))
+			if err != nil {
+				return nil, nil, fmt.Errorf("create retry request: %w", err)
+			}
+			httpReq.Header = req.Header
+		}
+
+		resp, respBody, err := p.doRequest(httpReq)
+		if err != nil {
+			return nil, nil, err
+		}
+
+		if resp.StatusCode != http.StatusTooManyRequests {
+			return resp, respBody, nil
+		}
+
+		// Last attempt — return the 429 as-is.
+		if attempt == maxRetries-1 {
+			return resp, respBody, nil
+		}
+
+		delay := parseRetryAfter(resp.Header.Get("Retry-After"))
+		if delay < 0 {
+			// Add jitter: backoff + rand(0, backoff/2) to avoid thundering herd.
+			jitter := time.Duration(rand.Int64N(int64(backoff / 2)))
+			delay = backoff + jitter
+			backoff *= 2
+		}
+
+		if delay == 0 {
+			continue
+		}
+
+		timer := time.NewTimer(delay)
+		select {
+		case <-ctx.Done():
+			timer.Stop()
+			return nil, nil, ctx.Err()
+		case <-timer.C:
+		}
+	}
+
+	// unreachable
+	return nil, nil, fmt.Errorf("unexpected: exceeded max retries")
+}
+
+// doRequest executes a single HTTP request and returns the response with body read.
+func (p *OpenAIClient) doRequest(req *http.Request) (*http.Response, []byte, error) {
+	resp, err := p.HTTP.Do(req)
+	if err != nil {
+		return nil, nil, fmt.Errorf("send request: %w", err)
+	}
+	defer resp.Body.Close()
+
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return nil, nil, fmt.Errorf("read response: %w", err)
+	}
+	return resp, body, nil
+}
+
+// parseRetryAfter parses a Retry-After header value as seconds.
+// Only the integer-seconds format is supported; HTTP-date is not.
+// Returns -1 if the header is missing or unparseable.
+func parseRetryAfter(s string) time.Duration {
+	if s == "" {
+		return -1
+	}
+	secs, err := strconv.Atoi(s)
+	if err != nil {
+		return -1
+	}
+	if secs < 0 {
+		return -1
+	}
+	return time.Duration(secs) * time.Second
 }
 
 // --- OpenAI wire types ---
