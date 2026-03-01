@@ -50,6 +50,8 @@ func main() {
 	llmURLFlag := flag.String("llm-url", "", "base URL for the LLM API (overrides provider default)")
 	filterFlag := flag.String("filter", "", "glob pattern to match case names (e.g. \"*matrix*\")")
 	tierFlag := flag.String("tier", "", "tier or range to run (e.g. \"2\" or \"1-3\")")
+	maxAttemptsFlag := flag.Int("max-attempts", 3, "max tool-call attempts per eval case")
+	maxItersFlag := flag.Int("max-iters", 6, "max LLM round-trips per eval case (includes nudges)")
 	flag.Parse()
 	numRuns := *runsFlag
 	if numRuns < 1 {
@@ -130,7 +132,8 @@ func main() {
 				defer func() { <-sem }()
 
 				start := time.Now()
-				res := runSingleEval(ctx, client, ec)
+				cfg := evalConfig{maxAttempts: *maxAttemptsFlag, maxIters: *maxItersFlag}
+				res := runSingleEval(ctx, client, ec, cfg)
 				res.Duration = time.Since(start)
 				allResults[i].Runs[r] = res
 				disp.finishRun(i, res.Passed, res.Duration)
@@ -143,8 +146,14 @@ func main() {
 	printSummary(*llmFlag, numRuns, allResults)
 }
 
+// evalConfig holds per-run settings for the eval loop.
+type evalConfig struct {
+	maxAttempts int
+	maxIters    int
+}
+
 // runSingleEval sets up an isolated MCP session and runs a single eval case.
-func runSingleEval(ctx context.Context, client llm.Client, ec evalCase) evalResult {
+func runSingleEval(ctx context.Context, client llm.Client, ec evalCase, cfg evalConfig) evalResult {
 	t1, t2 := mcp.NewInMemoryTransports()
 	srv := server.New()
 	mcpClient := mcp.NewClient(&mcp.Implementation{Name: "eval-client"}, nil)
@@ -163,7 +172,7 @@ func runSingleEval(ctx context.Context, client llm.Client, ec evalCase) evalResu
 		log.Fatalf("eval %s: list tools: %v", ec.name, err)
 	}
 
-	return runEval(ctx, client, session, toolDefs, ec)
+	return runEval(ctx, client, session, toolDefs, ec, cfg)
 }
 
 // mcpToolDefs calls ListTools on the MCP session and converts the results
@@ -263,9 +272,9 @@ func toolResultWithNudge(toolCallID, content, nudge string) llm.Message {
 	}
 }
 
-func runEval(ctx context.Context, client llm.Client, session *mcp.ClientSession, toolDefs []llm.ToolDef, ec evalCase) evalResult {
-	const maxAttempts = 3
-	const maxIterations = 6
+func runEval(ctx context.Context, client llm.Client, session *mcp.ClientSession, toolDefs []llm.ToolDef, ec evalCase, cfg evalConfig) evalResult {
+	maxAttempts := cfg.maxAttempts
+	maxIterations := cfg.maxIters
 
 	const systemPrompt = "You have access to tools. Use them to solve the task. " +
 		"Do not explain your work — just call the appropriate tool."
