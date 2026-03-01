@@ -359,13 +359,10 @@ func runEval(ctx context.Context, client llm.Client, session *mcp.ClientSession,
 
 		// If the LLM didn't use a tool, nudge it to do so.
 		if len(resp.ToolCalls) == 0 {
-			if iter == 0 {
-				messages = append(messages, nudgeMessage(
-					"Please use the provided tool to execute your solution rather than responding with text. Call the tool now.",
-				))
-				continue
-			}
-			break
+			messages = append(messages, nudgeMessage(
+				"Please use the provided tool to execute your solution rather than responding with text. Call the tool now.",
+			))
+			continue
 		}
 		toolCall := resp.ToolCalls[0]
 
