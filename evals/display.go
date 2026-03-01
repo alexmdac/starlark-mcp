@@ -18,8 +18,7 @@ type display struct {
 	numRuns      int
 	runsDone     []int
 	runsPassed   []int
-	runDurations [][]time.Duration
-	stopCh       chan struct{}
+	stopCh chan struct{}
 }
 
 func newDisplay(cs []evalCase, numRuns int) *display {
@@ -38,8 +37,7 @@ func newDisplay(cs []evalCase, numRuns int) *display {
 		numRuns:      numRuns,
 		runsDone:     make([]int, len(cs)),
 		runsPassed:   make([]int, len(cs)),
-		runDurations: make([][]time.Duration, len(cs)),
-		stopCh:       make(chan struct{}),
+		stopCh: make(chan struct{}),
 	}
 	for i := range cs {
 		d.startTimes[i] = now
@@ -66,13 +64,12 @@ func (d *display) loop() {
 	}
 }
 
-func (d *display) finishRun(i int, passed bool, dur time.Duration) {
+func (d *display) finishRun(i int, passed bool) {
 	d.mu.Lock()
 	d.runsDone[i]++
 	if passed {
 		d.runsPassed[i]++
 	}
-	d.runDurations[i] = append(d.runDurations[i], dur)
 	d.mu.Unlock()
 	d.render()
 }
@@ -113,20 +110,6 @@ func (d *display) render() {
 		total := d.numRuns
 
 		if done >= total {
-			// Finished — compute avg/min/max duration.
-			durs := d.runDurations[i]
-			var sum time.Duration
-			minD, maxD := durs[0], durs[0]
-			for _, dur := range durs {
-				sum += dur
-				if dur < minD {
-					minD = dur
-				}
-				if dur > maxD {
-					maxD = dur
-				}
-			}
-			avgD := sum / time.Duration(len(durs))
 			color := colorGreen
 			mark := "✔"
 			if passed == 0 {
@@ -136,9 +119,8 @@ func (d *display) render() {
 				color = colorYellow
 				mark = "◑"
 			}
-			fmt.Fprintf(os.Stderr, "  %s%s %s%s %s(%d/%d passed, avg %s, min %s, max %s)%s\n",
-				color, mark, c.name, colorReset, colorDim, passed, total,
-				avgD.Round(time.Millisecond), minD.Round(time.Millisecond), maxD.Round(time.Millisecond), colorReset)
+			fmt.Fprintf(os.Stderr, "  %s%s %s%s %s(%d/%d passed)%s\n",
+				color, mark, c.name, colorReset, colorDim, passed, total, colorReset)
 		} else {
 			// In progress.
 			elapsed := now.Sub(d.startTimes[i]).Round(time.Second)
