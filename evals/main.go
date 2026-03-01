@@ -1,5 +1,3 @@
-//go:build eval
-
 // Command eval runs the LLM eval harness against the Starlark MCP server.
 package main
 
