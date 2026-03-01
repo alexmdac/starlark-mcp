@@ -27,8 +27,6 @@ type evalResult struct {
 	Outputs      []string // starlark output from each attempt
 	TokensIn     int
 	TokensOut    int
-	Duration     time.Duration
-	LLMTime      time.Duration
 	StarlarkTime time.Duration
 }
 
@@ -151,12 +149,10 @@ func main() {
 				sem <- struct{}{}
 				defer func() { <-sem }()
 
-				start := time.Now()
 				cfg := evalConfig{maxAttempts: *maxAttemptsFlag, maxIters: *maxItersFlag}
 				res := runSingleEval(ctx, client, ec, cfg)
-				res.Duration = time.Since(start)
 				allResults[i].Runs[r] = res
-				disp.finishRun(i, res.Passed, res.Duration)
+				disp.finishRun(i, res.Passed)
 			}()
 		}
 	}
@@ -320,9 +316,7 @@ func runEval(ctx context.Context, client llm.Client, session *mcp.ClientSession,
 			Tools:     toolDefs,
 		}
 
-		llmStart := time.Now()
 		resp, err := client.SendMessage(ctx, params)
-		result.LLMTime += time.Since(llmStart)
 		if err != nil {
 			log.Fatalf("eval %s: LLM call: %v", ec.name, err)
 		}

@@ -11,19 +11,16 @@ import (
 
 // display manages live terminal output for eval progress.
 type display struct {
-	mu           sync.Mutex
-	cases        []evalCase
-	sorted       []int // indices into cases, sorted lexicographically
-	startTimes   []time.Time
-	numRuns      int
-	runsDone     []int
-	runsPassed   []int
-	runDurations [][]time.Duration
-	stopCh       chan struct{}
+	mu         sync.Mutex
+	cases      []evalCase
+	sorted     []int // indices into cases, sorted lexicographically
+	numRuns    int
+	runsDone   []int
+	runsPassed []int
+	stopCh     chan struct{}
 }
 
 func newDisplay(cs []evalCase, numRuns int) *display {
-	now := time.Now()
 	sorted := make([]int, len(cs))
 	for i := range sorted {
 		sorted[i] = i
@@ -32,17 +29,12 @@ func newDisplay(cs []evalCase, numRuns int) *display {
 		return cs[sorted[a]].name < cs[sorted[b]].name
 	})
 	d := &display{
-		cases:        cs,
-		sorted:       sorted,
-		startTimes:   make([]time.Time, len(cs)),
-		numRuns:      numRuns,
-		runsDone:     make([]int, len(cs)),
-		runsPassed:   make([]int, len(cs)),
-		runDurations: make([][]time.Duration, len(cs)),
-		stopCh:       make(chan struct{}),
-	}
-	for i := range cs {
-		d.startTimes[i] = now
+		cases:      cs,
+		sorted:     sorted,
+		numRuns:    numRuns,
+		runsDone:   make([]int, len(cs)),
+		runsPassed: make([]int, len(cs)),
+		stopCh:     make(chan struct{}),
 	}
 	// Print initial lines.
 	for range cs {
@@ -54,7 +46,7 @@ func newDisplay(cs []evalCase, numRuns int) *display {
 }
 
 func (d *display) loop() {
-	ticker := time.NewTicker(100 * time.Millisecond)
+	ticker := time.NewTicker(500 * time.Millisecond)
 	defer ticker.Stop()
 	for {
 		select {
@@ -66,13 +58,12 @@ func (d *display) loop() {
 	}
 }
 
-func (d *display) finishRun(i int, passed bool, dur time.Duration) {
+func (d *display) finishRun(i int, passed bool) {
 	d.mu.Lock()
 	d.runsDone[i]++
 	if passed {
 		d.runsPassed[i]++
 	}
-	d.runDurations[i] = append(d.runDurations[i], dur)
 	d.mu.Unlock()
 	d.render()
 }
@@ -113,20 +104,6 @@ func (d *display) render() {
 		total := d.numRuns
 
 		if done >= total {
-			// Finished — compute avg/min/max duration.
-			durs := d.runDurations[i]
-			var sum time.Duration
-			minD, maxD := durs[0], durs[0]
-			for _, dur := range durs {
-				sum += dur
-				if dur < minD {
-					minD = dur
-				}
-				if dur > maxD {
-					maxD = dur
-				}
-			}
-			avgD := sum / time.Duration(len(durs))
 			color := colorGreen
 			mark := "✔"
 			if passed == 0 {
@@ -136,20 +113,17 @@ func (d *display) render() {
 				color = colorYellow
 				mark = "◑"
 			}
-			fmt.Fprintf(os.Stderr, "  %s%s %s%s %s(%d/%d passed, avg %s, min %s, max %s)%s\n",
-				color, mark, c.name, colorReset, colorDim, passed, total,
-				avgD.Round(time.Millisecond), minD.Round(time.Millisecond), maxD.Round(time.Millisecond), colorReset)
+			fmt.Fprintf(os.Stderr, "  %s%s %s%s %s(%d/%d passed)%s\n",
+				color, mark, c.name, colorReset, colorDim, passed, total, colorReset)
 		} else {
 			// In progress.
-			elapsed := now.Sub(d.startTimes[i]).Round(time.Second)
-			fmt.Fprintf(os.Stderr, "  %s%s %s%s %s(%d/%d done, %s)%s\n",
-				colorYellow, spinnerFrames[frame], c.name, colorReset, colorDim, done, total, elapsed, colorReset)
+			fmt.Fprintf(os.Stderr, "  %s%s %s%s %s(%d/%d done)%s\n",
+				colorYellow, spinnerFrames[frame], c.name, colorReset, colorDim, done, total, colorReset)
 		}
 	}
 }
 
 func printSummary(model string, numRuns int, results []caseResults) {
-
 	// Find the longest case name for column sizing.
 	nameWidth := 4 // minimum for "NAME"
 	for _, cr := range results {
