@@ -18,12 +18,9 @@ from inspect_ai.scorer import (
     accuracy,
     scorer,
 )
-from inspect_ai.model import ChatMessageUser
 from inspect_ai.solver import (
-    Generate,
-    Solver,
     TaskState,
-    solver,
+    generate,
     system_message,
     use_tools,
 )
@@ -148,59 +145,23 @@ def starlark_output_scorer() -> Scorer:
     """Score the model's final assistant message against the judge criteria."""
 
     async def score(state: TaskState, target: Target) -> Score:
-        metadata = state.metadata
-        attempts = metadata.get("attempts", "?")
         answer = state.output.completion if state.output else ""
 
         if not answer.strip():
             return Score(
                 value=INCORRECT,
                 answer="",
-                explanation=f"attempts={attempts}, no answer in final message.",
+                explanation="No answer in final message.",
             )
 
-        passed = judge(answer, metadata["judge"])
+        passed = judge(answer, state.metadata["judge"])
         return Score(
             value=CORRECT if passed else INCORRECT,
             answer=answer,
-            explanation=f"scorer={metadata['judge']['scorer']}, attempts={attempts}, passed={passed}",
+            explanation=f"scorer={state.metadata['judge']['scorer']}, passed={passed}",
         )
 
     return score
-
-
-# ---------------------------------------------------------------------------
-# Retry solver
-# ---------------------------------------------------------------------------
-_MAX_ATTEMPTS = 3
-
-_NUDGE = (
-    "Your output was not correct. Please try again. "
-    "Use the execute_starlark tool and print your answer."
-)
-
-
-def completion(state: TaskState) -> str:
-    """Return the model's latest completion text."""
-    return state.output.completion if state.output else ""
-
-
-@solver
-def retry_on_wrong(max_attempts: int = _MAX_ATTEMPTS) -> Solver:
-    """Generate, check the model's response, and retry with a nudge if wrong."""
-
-    async def solve(state: TaskState, generate: Generate) -> TaskState:
-        for attempt in range(1, max_attempts + 1):
-            state = await generate(state)
-            if judge(completion(state), state.metadata["judge"]):
-                state.metadata["attempts"] = attempt
-                return state
-            if attempt < max_attempts:
-                state.messages.append(ChatMessageUser(content=_NUDGE))
-        state.metadata["attempts"] = max_attempts
-        return state
-
-    return solve
 
 
 # ---------------------------------------------------------------------------
@@ -226,7 +187,7 @@ def starlark_eval() -> Task:
                     command=_STARLARK_MCP,
                 ),
             ),
-            retry_on_wrong(),
+            generate(),
         ],
         scorer=starlark_output_scorer(),
         max_messages=24,
