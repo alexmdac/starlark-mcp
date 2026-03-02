@@ -13,6 +13,7 @@ from inspect_ai.scorer import (
     CORRECT,
     INCORRECT,
     Score,
+    Scorer,
     Target,
     accuracy,
     scorer,
@@ -143,7 +144,7 @@ def judge(output: str, spec: dict) -> bool:
 # Custom scorer
 # ---------------------------------------------------------------------------
 @scorer(metrics=[accuracy()])
-def starlark_output_scorer() -> ...:  # type: ignore[override]
+def starlark_output_scorer() -> Scorer:
     """Score the model's final assistant message against the judge criteria."""
 
     async def score(state: TaskState, target: Target) -> Score:
