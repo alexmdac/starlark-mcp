@@ -106,12 +106,8 @@ export OPENAI_API_KEY=unspecified
 export OPENAI_BASE_URL=http://169.254.169.254/gateway/llm/openai/v1
 ```
 
-For thinking models (Opus 4, etc.) on exe.dev, pass `--max-tokens 4096` to
-avoid a UTF-8 streaming issue with the gateway proxy:
-
-```sh
-task eval -- --model anthropic/claude-opus-4-6 --max-tokens 4096
-```
+The eval defaults to `max_tokens=4096` (set in `eval.py`), which avoids a
+UTF-8 streaming issue with the exe.dev gateway proxy.
 
 Summarize MCP tool errors from a run:
 
