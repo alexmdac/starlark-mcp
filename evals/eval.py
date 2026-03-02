@@ -81,39 +81,28 @@ def _load_dataset() -> list[Sample]:
 # ---------------------------------------------------------------------------
 @scorer(metrics=[accuracy()])
 def starlark_output_scorer() -> ...:  # type: ignore[override]
-    """Score based on the last successful tool output from the MCP server."""
+    """Score the model's final assistant message against the judge criteria."""
 
     async def score(state: TaskState, target: Target) -> Score:
         metadata = state.metadata
         attempts = metadata.get("attempts", "?")
-        tool_output = _last_tool_output(state)
+        answer = state.output.completion if state.output else ""
 
-        if tool_output is None:
+        if not answer.strip():
             return Score(
                 value=INCORRECT,
-                answer="<no tool output>",
-                explanation=f"attempts={attempts}, model never called the tool.",
+                answer="",
+                explanation=f"attempts={attempts}, no answer in final message.",
             )
 
-        passed = _judge(tool_output, metadata["judge"])
+        passed = _judge(answer, metadata["judge"])
         return Score(
             value=CORRECT if passed else INCORRECT,
-            answer=tool_output,
+            answer=answer,
             explanation=f"scorer={metadata['judge']['scorer']}, attempts={attempts}, passed={passed}",
         )
 
     return score
-
-
-# ---------------------------------------------------------------------------
-# Helpers
-# ---------------------------------------------------------------------------
-def _last_tool_output(state: TaskState) -> str | None:
-    """Return the text of the last successful tool message, or None."""
-    for msg in reversed(state.messages):
-        if msg.role == "tool" and msg.error is None:
-            return msg.text
-    return None
 
 
 # ---------------------------------------------------------------------------
@@ -127,15 +116,19 @@ _NUDGE = (
 )
 
 
+def _completion(state: TaskState) -> str:
+    """Return the model's latest completion text."""
+    return state.output.completion if state.output else ""
+
+
 @solver
 def retry_on_wrong(max_attempts: int = _MAX_ATTEMPTS) -> Solver:
-    """Generate, check the tool output, and retry with a nudge if wrong."""
+    """Generate, check the model's response, and retry with a nudge if wrong."""
 
     async def solve(state: TaskState, generate: Generate) -> TaskState:
         for attempt in range(1, max_attempts + 1):
             state = await generate(state)
-            output = _last_tool_output(state)
-            if output is not None and _judge(output, state.metadata["judge"]):
+            if _judge(_completion(state), state.metadata["judge"]):
                 state.metadata["attempts"] = attempt
                 return state
             if attempt < max_attempts:
@@ -151,7 +144,8 @@ def retry_on_wrong(max_attempts: int = _MAX_ATTEMPTS) -> Solver:
 # ---------------------------------------------------------------------------
 SYSTEM_PROMPT = (
     "You have access to tools. Use them to solve the task. "
-    "Do not explain your work \u2014 just call the appropriate tool."
+    "After calling the tool, respond with ONLY the exact output from the tool. "
+    "No explanation, no formatting, no markdown \u2014 just the raw output."
 )
 
 
