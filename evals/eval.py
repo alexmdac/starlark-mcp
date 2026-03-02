@@ -69,11 +69,11 @@ def _load_dataset() -> list[Sample]:
 # ---------------------------------------------------------------------------
 
 
-def _exact(output: str, expected: str) -> bool:
+def exact(output: str, expected: str) -> bool:
     return output.rstrip(" \t\n\r") == expected.rstrip(" \t\n\r")
 
 
-def _numeric(output: str, expected: float, tolerance: float) -> bool:
+def numeric(output: str, expected: float, tolerance: float) -> bool:
     try:
         val = float(output.strip())
     except ValueError:
@@ -81,11 +81,11 @@ def _numeric(output: str, expected: float, tolerance: float) -> bool:
     return abs(val - expected) <= tolerance
 
 
-def _one_of(output: str, accepted: list[str]) -> bool:
+def one_of(output: str, accepted: list[str]) -> bool:
     return output.rstrip(" \t\n\r") in accepted
 
 
-def _topological_sort(output: str, edges: list[list[str]]) -> bool:
+def topological_sort(output: str, edges: list[list[str]]) -> bool:
     fields = output.strip().split()
     if not fields:
         return False
@@ -99,7 +99,7 @@ def _topological_sort(output: str, edges: list[list[str]]) -> bool:
     return all(pos[e[0]] < pos[e[1]] for e in edges)
 
 
-def _n_queens(output: str, n: int) -> bool:
+def n_queens(output: str, n: int) -> bool:
     lines = output.strip().split("\n")
     if len(lines) != n:
         return False
@@ -124,18 +124,18 @@ def _n_queens(output: str, n: int) -> bool:
     return queens == n
 
 
-def _judge(output: str, spec: dict) -> bool:
+def judge(output: str, spec: dict) -> bool:
     s = spec["scorer"]
     if s == "exact":
-        return _exact(output, spec["target"])
+        return exact(output, spec["target"])
     elif s == "numeric":
-        return _numeric(output, spec["expected"], spec["tolerance"])
+        return numeric(output, spec["expected"], spec["tolerance"])
     elif s == "one_of":
-        return _one_of(output, spec["accepted"])
+        return one_of(output, spec["accepted"])
     elif s == "topological_sort":
-        return _topological_sort(output, spec["edges"])
+        return topological_sort(output, spec["edges"])
     elif s == "n_queens":
-        return _n_queens(output, spec["n"])
+        return n_queens(output, spec["n"])
     return False
 
 
@@ -158,7 +158,7 @@ def starlark_output_scorer() -> ...:  # type: ignore[override]
                 explanation=f"attempts={attempts}, no answer in final message.",
             )
 
-        passed = _judge(answer, metadata["judge"])
+        passed = judge(answer, metadata["judge"])
         return Score(
             value=CORRECT if passed else INCORRECT,
             answer=answer,
@@ -179,7 +179,7 @@ _NUDGE = (
 )
 
 
-def _completion(state: TaskState) -> str:
+def completion(state: TaskState) -> str:
     """Return the model's latest completion text."""
     return state.output.completion if state.output else ""
 
@@ -191,7 +191,7 @@ def retry_on_wrong(max_attempts: int = _MAX_ATTEMPTS) -> Solver:
     async def solve(state: TaskState, generate: Generate) -> TaskState:
         for attempt in range(1, max_attempts + 1):
             state = await generate(state)
-            if _judge(_completion(state), state.metadata["judge"]):
+            if judge(completion(state), state.metadata["judge"]):
                 state.metadata["attempts"] = attempt
                 return state
             if attempt < max_attempts:
