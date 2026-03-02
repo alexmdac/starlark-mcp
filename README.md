@@ -73,43 +73,49 @@ task --list
 
 ### Evals
 
-The project includes an LLM eval harness that measures how effectively models
-use the `execute_starlark` tool. It runs 44 test cases across 6 difficulty tiers,
-executing each case multiple times to measure reliability, and produces a scored
-summary with pass rates.
+The project includes an LLM eval harness using
+[Inspect AI](https://inspect.ai-safety-institute.org.uk/) that measures how
+effectively models use the `execute_starlark` tool. It runs 44 test cases,
+executing each case multiple times to measure reliability.
+
+Setup:
 
 ```sh
-task eval
+uv sync
+go build -o starlark-mcp .
 ```
 
-Flags can be passed after `--`:
+Run (the `--model` flag is required):
 
 ```sh
-task eval -- -runs 10 -llm anthropic:claude-sonnet-4-6
-task eval -- -llm ollama:qwen3:4b -runs 1 -tier 1-2 -filter count_*
+task eval -- --model anthropic/claude-sonnet-4-6
+task eval -- --model openai/gpt-4o
+task eval -- --model anthropic/claude-sonnet-4-6 --epochs 5
+task eval -- --model anthropic/claude-sonnet-4-6 --limit 10
 ```
 
-| Flag | Default | Description |
-|------|---------|-------------|
-| `-runs` | `5` | Number of independent runs per eval case |
-| `-llm` | `anthropic:claude-sonnet-4-6` | `provider:model` to evaluate (see providers below) |
-| `-llm-url` | per-provider default | API endpoint (overrides the provider's default URL) |
-| `-filter` | | Glob pattern to select eval cases by name |
-| `-tier` | | Tier filter: `N` for a single tier, `N-M` for a range |
-| `-max-attempts` | `3` | Max tool-call attempts per eval case |
-| `-max-iters` | `6` | Max LLM round-trips per eval case (includes nudges) |
+Set `STARLARK_MCP_BIN` to override the path to the MCP server binary
+(defaults to `./starlark-mcp` in the repo root).
 
-**Providers:**
+On exe.dev, configure the LLM gateway:
 
-| Provider | Example | Default URL |
-|----------|---------|-------------|
-| `anthropic` | `anthropic:claude-sonnet-4-6` | exe.dev LLM gateway |
-| `openai` | `openai:gpt-4o` | exe.dev LLM gateway |
-| `ollama` | `ollama:qwen3:4b` | `http://localhost:11434` |
+```sh
+export ANTHROPIC_API_KEY=unspecified
+export ANTHROPIC_BASE_URL=http://169.254.169.254/gateway/llm/anthropic
+export OPENAI_API_KEY=unspecified
+export OPENAI_BASE_URL=http://169.254.169.254/gateway/llm/openai/v1
+```
 
-The `ANTHROPIC_API_KEY` or `OPENAI_API_KEY` environment variable provides the
-API key for the respective provider (optional when using the exe.dev gateway).
-The `ollama` provider does not require an API key.
+The eval defaults to `max_tokens=4096` (set in `eval.py`), which avoids a
+UTF-8 streaming issue with the exe.dev gateway proxy.
+
+Summarize MCP tool errors from a run:
+
+```sh
+task eval:errors
+```
+
+View results with `task eval:view`.
 
 ## License
 

@@ -26,3 +26,11 @@ go.work.sum
 # Environment
 .env
 .env.*
+
+# Task runner
+.task/
+
+# Inspect AI
+logs/
+__pycache__/
+.venv/

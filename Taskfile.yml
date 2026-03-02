@@ -17,6 +17,9 @@ tasks:
           echo "$unformatted"
           exit 1
         fi
+      - uv run ruff format --check .
+      - uv run ruff check .
+      - uv run pyright .
 
   vet:
     desc: Run go vet
@@ -32,6 +35,7 @@ tasks:
     desc: Run tests
     cmds:
       - go test ./...
+      - uv run pytest evals/
 
   test-msan:
     desc: Run tests with memory sanitizer (requires clang)
@@ -58,6 +62,17 @@ tasks:
     deps: [check, test-msan, test-asan]
 
   eval:
-    desc: Run LLM evals
+    desc: Run LLM evals (Inspect AI)
     cmds:
-      - go run ./evals {{.CLI_ARGS}}
+      - go build -o starlark-mcp .
+      - uv run inspect eval evals/eval.py {{.CLI_ARGS}}
+
+  eval:errors:
+    desc: Summarize MCP tool errors from the latest eval log
+    cmds:
+      - uv run python evals/errors.py {{.CLI_ARGS}}
+
+  eval:view:
+    desc: Open Inspect AI log viewer
+    cmds:
+      - uv run inspect view {{.CLI_ARGS}}

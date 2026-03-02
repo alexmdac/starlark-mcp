@@ -4,12 +4,7 @@ import (
 	"context"
 	"strings"
 	"testing"
-
-	"github.com/alexmdac/starlark-mcp/internal/textutil"
 )
-
-// dedent is a short alias so callers don't need the package qualifier.
-var dedent = textutil.Dedent
 
 // Tests that verify claims made in description.md.
 // If a test here fails, update the description to match reality.
@@ -49,20 +44,18 @@ func TestDescription_Works(t *testing.T) {
 		{"math floor", `load("math", "floor"); print(floor(1.5))`, "1"},
 		{"top-level for loop", `for i in range(3): print(i)`, "0\n1\n2"},
 		{"top-level if", `if True: print("yes")`, "yes"},
-		{"while loop", dedent(`
-			def main():
-			    x = 0
-			    while x < 3:
-			        x += 1
-			    print(x)
-			main()
-		`), "3"},
-		{"recursion", dedent(`
-			def fact(n):
-			    if n <= 1: return 1
-			    return n * fact(n - 1)
-			print(fact(5))
-		`), "120"},
+		{"while loop", `
+def main():
+    x = 0
+    while x < 3:
+        x += 1
+    print(x)
+main()`, "3"},
+		{"recursion", `
+def fact(n):
+    if n <= 1: return 1
+    return n * fact(n - 1)
+print(fact(5))`, "120"},
 	}
 
 	for _, tc := range tests {
@@ -85,12 +78,11 @@ func TestDescription_Errors(t *testing.T) {
 		errMsg  string
 	}{
 		{"operator chaining", `print(1 < 2 < 3)`, "does not associate with"},
-		{"f-strings", dedent(`
-			def main():
-			    x = 42
-			    print(f"val {x}")
-			main()
-		`), "got string literal"},
+		{"f-strings", `
+def main():
+    x = 42
+    print(f"val {x}")
+main()`, "got string literal"},
 		{"star unpacking", `a, *b = [1, 2, 3]`, "got '*'"},
 		{"class", `class Foo: pass`, "got class"},
 		{"power operator", `print(2 ** 10)`, "got '**'"},
