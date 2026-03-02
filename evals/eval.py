@@ -28,18 +28,6 @@ from inspect_ai.solver import (
 )
 from inspect_ai.tool import mcp_server_stdio
 
-# Inspect loads this file as a standalone module (not as part of the evals
-# package), so normal imports from the package don't work.  Use importlib
-# to load judges.py relative to this file.
-import importlib.util as _ilu
-
-_spec = _ilu.spec_from_file_location(
-    "judges", str(Path(__file__).resolve().parent / "judges.py")
-)
-_judges_mod = _ilu.module_from_spec(_spec)  # type: ignore[arg-type]
-_spec.loader.exec_module(_judges_mod)  # type: ignore[union-attr]
-_judge = _judges_mod.judge
-
 # ---------------------------------------------------------------------------
 # MCP server binary path
 # ---------------------------------------------------------------------------
@@ -74,6 +62,81 @@ def _load_dataset() -> list[Sample]:
             )
         )
     return samples
+
+
+# ---------------------------------------------------------------------------
+# Judges
+# ---------------------------------------------------------------------------
+
+
+def _exact(output: str, expected: str) -> bool:
+    return output.rstrip(" \t\n\r") == expected.rstrip(" \t\n\r")
+
+
+def _numeric(output: str, expected: float, tolerance: float) -> bool:
+    try:
+        val = float(output.strip())
+    except ValueError:
+        return False
+    return abs(val - expected) <= tolerance
+
+
+def _one_of(output: str, accepted: list[str]) -> bool:
+    return output.rstrip(" \t\n\r") in accepted
+
+
+def _topological_sort(output: str, edges: list[list[str]]) -> bool:
+    fields = output.strip().split()
+    if not fields:
+        return False
+    vertex_set: set[str] = set()
+    for e in edges:
+        vertex_set.add(e[0])
+        vertex_set.add(e[1])
+    if set(fields) != vertex_set or len(fields) != len(vertex_set):
+        return False
+    pos = {f: i for i, f in enumerate(fields)}
+    return all(pos[e[0]] < pos[e[1]] for e in edges)
+
+
+def _n_queens(output: str, n: int) -> bool:
+    lines = output.strip().split("\n")
+    if len(lines) != n:
+        return False
+    queens = 0
+    cols: set[int] = set()
+    diag1: set[int] = set()
+    diag2: set[int] = set()
+    for r, line in enumerate(lines):
+        fields = line.split()
+        if len(fields) != n:
+            return False
+        for c, cell in enumerate(fields):
+            if cell == "Q":
+                queens += 1
+                if c in cols or (r - c) in diag1 or (r + c) in diag2:
+                    return False
+                cols.add(c)
+                diag1.add(r - c)
+                diag2.add(r + c)
+            elif cell != ".":
+                return False
+    return queens == n
+
+
+def _judge(output: str, spec: dict) -> bool:
+    s = spec["scorer"]
+    if s == "exact":
+        return _exact(output, spec["target"])
+    elif s == "numeric":
+        return _numeric(output, spec["expected"], spec["tolerance"])
+    elif s == "one_of":
+        return _one_of(output, spec["accepted"])
+    elif s == "topological_sort":
+        return _topological_sort(output, spec["edges"])
+    elif s == "n_queens":
+        return _n_queens(output, spec["n"])
+    return False
 
 
 # ---------------------------------------------------------------------------

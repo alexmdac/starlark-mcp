@@ -1,6 +1,13 @@
 """Tests for eval judging functions."""
 
-from evals.judges import exact, judge, n_queens, numeric, one_of, topological_sort
+from evals.eval import (
+    _exact as exact,
+    _judge as judge,
+    _n_queens as n_queens,
+    _numeric as numeric,
+    _one_of as one_of,
+    _topological_sort as topological_sort,
+)
 
 
 # ---------------------------------------------------------------------------
