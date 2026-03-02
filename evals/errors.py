@@ -25,7 +25,7 @@ def find_latest_log() -> Path:
 
 def extract_errors(log_path: Path) -> tuple[dict, Counter, list]:
     """Return (eval_info, error_counts, per_sample_details)."""
-    errors = Counter()
+    errors: Counter[str] = Counter()
     details = []  # (sample_id, passed, attempt, [errors])
 
     with zipfile.ZipFile(log_path) as zf:

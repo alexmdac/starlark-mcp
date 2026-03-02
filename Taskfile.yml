@@ -19,6 +19,7 @@ tasks:
         fi
       - uv run ruff format --check .
       - uv run ruff check .
+      - uv run pyright .
 
   vet:
     desc: Run go vet
