@@ -75,8 +75,7 @@ task --list
 
 The project includes an LLM eval harness using
 [Inspect AI](https://inspect.ai-safety-institute.org.uk/) that measures how
-effectively models use the `execute_starlark` tool. It runs 44 test cases,
-executing each case multiple times to measure reliability.
+effectively models use the `execute_starlark` tool across 44 test cases.
 
 Setup:
 
