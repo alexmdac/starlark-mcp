@@ -77,13 +77,6 @@ The project includes an LLM eval harness using
 [Inspect AI](https://inspect.ai-safety-institute.org.uk/) that measures how
 effectively models use the `execute_starlark` tool across 44 test cases.
 
-Setup:
-
-```sh
-uv sync
-go build -o starlark-mcp .
-```
-
 Run (the `--model` flag is required):
 
 ```sh
