@@ -187,9 +187,7 @@ def starlark_eval() -> Task:
                     command=_STARLARK_MCP,
                 ),
             ),
-            # Default max_tokens avoids UTF-8 streaming issues with
-            # some LLM gateway proxies (e.g. exe.dev).
-            generate(max_tokens=4096),
+            generate(),
         ],
         scorer=starlark_output_scorer(),
         max_messages=24,
